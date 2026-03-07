@@ -1,6 +1,9 @@
 package com.sigma.smarthome.ui.app;
 
 import com.sigma.smarthome.ui.service.UserApiService;
+import com.sigma.smarthome.ui.service.UserApiService.LoginResult;
+import com.sigma.smarthome.ui.util.SessionManager;
+import com.sigma.smarthome.ui.view.DashboardView;
 import com.sigma.smarthome.ui.view.LoginView;
 import com.sigma.smarthome.ui.view.RegisterView;
 import javafx.application.Application;
@@ -31,12 +34,18 @@ public class MainApp extends Application {
             loginView.setLoading(true);
 
             try {
-                String token = userApiService.login(email, password);
+                LoginResult result = userApiService.login(email, password);
+
+                SessionManager.startSession(
+                        result.accessToken(),
+                        result.email(),
+                        result.role()
+                );
 
                 System.out.println("LOGIN SUCCESS");
-                System.out.println("JWT TOKEN: " + token);
+                System.out.println("JWT TOKEN: " + result.accessToken());
 
-                loginView.setMessage("Login successful.", false);
+                showDashboard(stage);
 
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -90,6 +99,25 @@ public class MainApp extends Application {
         Scene scene = new Scene(registerView.getView(), 1100, 700);
         stage.setTitle("Smart Home Maintenance Platform");
         stage.setScene(scene);
+        stage.show();
+    }
+
+    private void showDashboard(Stage stage) {
+        DashboardView dashboardView = new DashboardView(
+                SessionManager.getEmail(),
+                SessionManager.getRole()
+        );
+
+        dashboardView.setOnLogout(() -> {
+            SessionManager.clearSession();
+            showLogin(stage);
+        });
+
+        Scene scene = new Scene(dashboardView.getView(), 1280, 800);
+        stage.setTitle("Smart Home Maintenance Platform");
+        stage.setScene(scene);
+        stage.setMinWidth(1100);
+        stage.setMinHeight(700);
         stage.show();
     }
 
