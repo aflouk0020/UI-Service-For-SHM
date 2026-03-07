@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Base64;
 import java.util.Map;
 
 public class UserApiService {
@@ -24,7 +25,7 @@ public class UserApiService {
         this.objectMapper = new ObjectMapper();
     }
 
-    public String login(String email, String password) throws IOException, InterruptedException {
+    public LoginResult login(String email, String password) throws IOException, InterruptedException {
         String requestBody = objectMapper.writeValueAsString(
                 Map.of(
                         "email", email,
@@ -43,11 +44,14 @@ public class UserApiService {
         if (response.statusCode() >= 200 && response.statusCode() < 300) {
             JsonNode jsonNode = objectMapper.readTree(response.body());
 
-            if (jsonNode.has("accessToken")) {
-                return jsonNode.get("accessToken").asText();
+            if (!jsonNode.has("accessToken")) {
+                throw new IllegalStateException("Login succeeded but accessToken was not found.");
             }
 
-            throw new IllegalStateException("Login succeeded but accessToken was not found.");
+            String accessToken = jsonNode.get("accessToken").asText();
+            JwtUserInfo jwtUserInfo = extractUserInfoFromToken(accessToken);
+
+            return new LoginResult(accessToken, jwtUserInfo.email(), jwtUserInfo.role());
         }
 
         throw new RuntimeException("Login failed. HTTP " + response.statusCode() + " - " + response.body());
@@ -81,5 +85,27 @@ public class UserApiService {
         }
 
         throw new RuntimeException("Registration failed. HTTP " + response.statusCode() + " - " + response.body());
+    }
+
+    private JwtUserInfo extractUserInfoFromToken(String token) throws IOException {
+        String[] tokenParts = token.split("\\.");
+
+        if (tokenParts.length < 2) {
+            throw new IllegalArgumentException("Invalid JWT token.");
+        }
+
+        String payloadJson = new String(Base64.getUrlDecoder().decode(tokenParts[1]));
+        JsonNode payloadNode = objectMapper.readTree(payloadJson);
+
+        String email = payloadNode.has("email") ? payloadNode.get("email").asText() : "Unknown";
+        String role = payloadNode.has("role") ? payloadNode.get("role").asText() : "Unknown";
+
+        return new JwtUserInfo(email, role);
+    }
+
+    private record JwtUserInfo(String email, String role) {
+    }
+
+    public record LoginResult(String accessToken, String email, String role) {
     }
 }
