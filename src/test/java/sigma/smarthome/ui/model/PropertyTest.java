@@ -38,4 +38,17 @@ class PropertyTest {
         assertEquals("APARTMENT", property.getPropertyType());
         assertEquals("manager999", property.getManagerId());
     }
+    @Test
+    void propertyFieldsWorkCorrectly() {
+
+        Property property = new Property();
+
+        property.setId("123");
+        property.setAddress("1 Main Street");
+        property.setPropertyType("House");
+
+        assertEquals("123", property.getId());
+        assertEquals("1 Main Street", property.getAddress());
+        assertEquals("House", property.getPropertyType());
+    }
 }

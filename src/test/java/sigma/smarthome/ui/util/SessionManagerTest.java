@@ -38,4 +38,19 @@ class SessionManagerTest {
 
         assertFalse(SessionManager.isLoggedIn());
     }
+    @Test
+    void sessionStartsAndEndsCorrectly() {
+
+        SessionManager.startSession("token123", "test@test.com", "MANAGER");
+
+        assertTrue(SessionManager.isLoggedIn());
+        assertEquals("token123", SessionManager.getAccessToken());
+        assertEquals("test@test.com", SessionManager.getEmail());
+        assertEquals("MANAGER", SessionManager.getRole());
+
+        SessionManager.clearSession();
+
+        assertFalse(SessionManager.isLoggedIn());
+        assertNull(SessionManager.getAccessToken());
+    }
 }

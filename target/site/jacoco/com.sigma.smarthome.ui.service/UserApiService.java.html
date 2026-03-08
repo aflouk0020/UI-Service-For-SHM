@@ -20,10 +20,10 @@ public class UserApiService {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-<span class="nc" id="L23">    public UserApiService() {</span>
-<span class="nc" id="L24">        this.httpClient = HttpClient.newHttpClient();</span>
-<span class="nc" id="L25">        this.objectMapper = new ObjectMapper();</span>
-<span class="nc" id="L26">    }</span>
+<span class="fc" id="L23">    public UserApiService() {</span>
+<span class="fc" id="L24">        this.httpClient = HttpClient.newHttpClient();</span>
+<span class="fc" id="L25">        this.objectMapper = new ObjectMapper();</span>
+<span class="fc" id="L26">    }</span>
 
     public LoginResult login(String email, String password) throws IOException, InterruptedException {
 <span class="nc" id="L29">        String requestBody = objectMapper.writeValueAsString(</span>
