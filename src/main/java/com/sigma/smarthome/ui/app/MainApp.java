@@ -105,13 +105,12 @@ public class MainApp extends Application {
     private void showDashboard(Stage stage) {
         DashboardView dashboardView = new DashboardView(
                 SessionManager.getEmail(),
-                SessionManager.getRole()
+                SessionManager.getRole(),
+                () -> {
+                    SessionManager.clearSession();
+                    showLogin(stage);
+                }
         );
-
-        dashboardView.setOnLogout(() -> {
-            SessionManager.clearSession();
-            showLogin(stage);
-        });
 
         Scene scene = new Scene(dashboardView.getView(), 1280, 800);
         stage.setTitle("Smart Home Maintenance Platform");
