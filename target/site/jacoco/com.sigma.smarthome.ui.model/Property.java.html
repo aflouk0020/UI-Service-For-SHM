@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Property.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">SmartHomeMaintenanceUI</a> &gt; <a href="index.source.html" class="el_package">com.sigma.smarthome.ui.model</a> &gt; <span class="el_source">Property.java</span></div><h1>Property.java</h1><pre class="source lang-java linenums">package com.sigma.smarthome.ui.model;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public class Property {
+
+    @JsonProperty(&quot;propertyId&quot;)
+    private String id;
+
+    private String address;
+    private String propertyType;
+    private String managerId;
+
+<span class="fc" id="L14">    public Property() {</span>
+<span class="fc" id="L15">    }</span>
+
+<span class="fc" id="L17">    public Property(String id, String address, String propertyType, String managerId) {</span>
+<span class="fc" id="L18">        this.id = id;</span>
+<span class="fc" id="L19">        this.address = address;</span>
+<span class="fc" id="L20">        this.propertyType = propertyType;</span>
+<span class="fc" id="L21">        this.managerId = managerId;</span>
+<span class="fc" id="L22">    }</span>
+
+    public String getId() {
+<span class="fc" id="L25">        return id;</span>
+    }
+
+    public void setId(String id) {
+<span class="fc" id="L29">        this.id = id;</span>
+<span class="fc" id="L30">    }</span>
+
+    public String getAddress() {
+<span class="fc" id="L33">        return address;</span>
+    }
+
+    public void setAddress(String address) {
+<span class="fc" id="L37">        this.address = address;</span>
+<span class="fc" id="L38">    }</span>
+
+    public String getPropertyType() {
+<span class="fc" id="L41">        return propertyType;</span>
+    }
+
+    public void setPropertyType(String propertyType) {
+<span class="fc" id="L45">        this.propertyType = propertyType;</span>
+<span class="fc" id="L46">    }</span>
+
+    public String getManagerId() {
+<span class="fc" id="L49">        return managerId;</span>
+    }
+
+    public void setManagerId(String managerId) {
+<span class="fc" id="L53">        this.managerId = managerId;</span>
+<span class="fc" id="L54">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
