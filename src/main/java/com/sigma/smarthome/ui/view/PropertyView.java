@@ -41,6 +41,7 @@ public class PropertyView {
     private final Label sectionBadge = new Label("Property Service");
     private final Label titleLabel = new Label("Property Management");
     private final Label subtitleLabel = new Label("Manage residential properties connected to the platform.");
+    private final Label accessNoteLabel = new Label();
 
     private final Button refreshButton = new Button("Refresh");
     private final Button addButton = new Button("Add Property");
@@ -66,7 +67,10 @@ public class PropertyView {
 
     private final PropertyApiService propertyApiService = new PropertyApiService();
 
+    private final boolean readOnlyAccess;
+
     public PropertyView() {
+        this.readOnlyAccess = isMaintenanceStaff();
         initialise();
         loadProperties();
     }
@@ -81,6 +85,7 @@ public class PropertyView {
         configureTable();
         configureFooter();
         wireFiltering();
+        applyAccessControl();
     }
 
     private void configureRoot() {
@@ -109,7 +114,25 @@ public class PropertyView {
                 "-fx-text-fill: #6b7280;"
         );
 
-        VBox headerBox = new VBox(10, sectionBadge, titleLabel, subtitleLabel);
+        accessNoteLabel.setStyle(
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #92400e;" +
+                "-fx-background-color: #fef3c7;" +
+                "-fx-padding: 8 12 8 12;" +
+                "-fx-background-radius: 10;"
+        );
+
+        if (readOnlyAccess) {
+            accessNoteLabel.setText("Maintenance staff can view property information only.");
+            accessNoteLabel.setVisible(true);
+            accessNoteLabel.setManaged(true);
+        } else {
+            accessNoteLabel.setVisible(false);
+            accessNoteLabel.setManaged(false);
+        }
+
+        VBox headerBox = new VBox(10, sectionBadge, titleLabel, subtitleLabel, accessNoteLabel);
         headerBox.setAlignment(Pos.TOP_LEFT);
 
         root.getChildren().add(headerBox);
@@ -147,8 +170,8 @@ public class PropertyView {
     }
 
     private VBox createSummaryCard(String titleText, Label valueLabel) {
-        Label titleLabel = new Label(titleText);
-        titleLabel.setStyle(
+        Label cardTitleLabel = new Label(titleText);
+        cardTitleLabel.setStyle(
                 "-fx-font-size: 13px;" +
                 "-fx-font-weight: bold;" +
                 "-fx-text-fill: #6b7280;"
@@ -160,7 +183,7 @@ public class PropertyView {
                 "-fx-text-fill: #111827;"
         );
 
-        VBox card = new VBox(10, titleLabel, valueLabel);
+        VBox card = new VBox(10, cardTitleLabel, valueLabel);
         card.setPadding(new Insets(18));
         card.setPrefWidth(220);
         card.setMinHeight(96);
@@ -330,6 +353,18 @@ public class PropertyView {
         propertyTypeFilter.valueProperty().addListener((obs, oldValue, newValue) -> applyFilters());
     }
 
+    private void applyAccessControl() {
+        if (readOnlyAccess) {
+            addButton.setDisable(true);
+            editButton.setDisable(true);
+            deleteButton.setDisable(true);
+
+            addButton.setOpacity(0.65);
+            editButton.setOpacity(0.65);
+            deleteButton.setOpacity(0.65);
+        }
+    }
+
     private void applyFilters() {
         String searchText = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
         String selectedType = propertyTypeFilter.getValue();
@@ -378,6 +413,11 @@ public class PropertyView {
     }
 
     private void handleAddProperty() {
+        if (readOnlyAccess) {
+            showMessage("Maintenance staff can view property information only.", true);
+            return;
+        }
+
         try {
             Optional<PropertyFormData> result = showPropertyFormDialog(
                     "Create Property",
@@ -402,6 +442,11 @@ public class PropertyView {
     }
 
     private void handleEditProperty() {
+        if (readOnlyAccess) {
+            showMessage("Maintenance staff can view property information only.", true);
+            return;
+        }
+
         Property selected = propertyTable.getSelectionModel().getSelectedItem();
 
         if (selected == null) {
@@ -437,6 +482,11 @@ public class PropertyView {
     }
 
     private void handleDeleteProperty() {
+        if (readOnlyAccess) {
+            showMessage("Maintenance staff can view property information only.", true);
+            return;
+        }
+
         Property selected = propertyTable.getSelectionModel().getSelectedItem();
 
         if (selected == null) {
@@ -467,7 +517,6 @@ public class PropertyView {
             showMessage("Failed to delete property.", true);
         }
     }
-
     private Optional<PropertyFormData> showPropertyFormDialog(
             String title,
             String header,
@@ -476,36 +525,113 @@ public class PropertyView {
     ) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle(title);
-        dialog.setHeaderText(header);
+        dialog.setHeaderText(null);
 
         ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
+        dialog.getDialogPane().setStyle(
+                "-fx-background-color: white;" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: #e5e7eb;" +
+                "-fx-border-radius: 18;" +
+                "-fx-border-width: 1;"
+        );
+        dialog.getDialogPane().setPrefWidth(460);
+
+        Label dialogTitle = new Label(title);
+        dialogTitle.setStyle(
+                "-fx-font-size: 24px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #111827;"
+        );
+
+        Label dialogSubtitle = new Label(header);
+        dialogSubtitle.setWrapText(true);
+        dialogSubtitle.setStyle(
+                "-fx-font-size: 14px;" +
+                "-fx-text-fill: #6b7280;"
+        );
+
+        Label addressLabel = new Label("Address");
+        addressLabel.setStyle(
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #374151;"
+        );
+
         TextField addressField = new TextField(defaultAddress == null ? "" : defaultAddress);
         addressField.setPromptText("Enter property address");
+        addressField.setPrefHeight(42);
+        addressField.setStyle(
+                "-fx-background-color: #f9fafb;" +
+                "-fx-background-radius: 10;" +
+                "-fx-border-color: #d1d5db;" +
+                "-fx-border-radius: 10;" +
+                "-fx-border-width: 1;" +
+                "-fx-font-size: 13px;" +
+                "-fx-text-fill: #111827;" +
+                "-fx-prompt-text-fill: #9ca3af;"
+        );
+
+        Label typeLabel = new Label("Property Type");
+        typeLabel.setStyle(
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #374151;"
+        );
 
         TextField typeField = new TextField(defaultPropertyType == null ? "" : defaultPropertyType);
         typeField.setPromptText("Enter property type");
+        typeField.setPrefHeight(42);
+        typeField.setStyle(
+                "-fx-background-color: #f9fafb;" +
+                "-fx-background-radius: 10;" +
+                "-fx-border-color: #d1d5db;" +
+                "-fx-border-radius: 10;" +
+                "-fx-border-width: 1;" +
+                "-fx-font-size: 13px;" +
+                "-fx-text-fill: #111827;" +
+                "-fx-prompt-text-fill: #9ca3af;"
+        );
 
-        GridPane form = new GridPane();
-        form.setHgap(14);
-        form.setVgap(14);
-        form.setPadding(new Insets(10, 0, 10, 0));
+        VBox content = new VBox(14,
+                dialogTitle,
+                dialogSubtitle,
+                addressLabel,
+                addressField,
+                typeLabel,
+                typeField
+        );
+        content.setPadding(new Insets(24));
+        content.setStyle("-fx-background-color: white;");
 
-        ColumnConstraints labelColumn = new ColumnConstraints();
-        labelColumn.setPrefWidth(110);
+        dialog.getDialogPane().setContent(content);
 
-        ColumnConstraints fieldColumn = new ColumnConstraints();
-        fieldColumn.setHgrow(Priority.ALWAYS);
+        Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
+        Button cancelButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
 
-        form.getColumnConstraints().addAll(labelColumn, fieldColumn);
+        saveButton.setStyle(
+                "-fx-background-color: #2563eb;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 10;" +
+                "-fx-padding: 8 20 8 20;" +
+                "-fx-cursor: hand;"
+        );
 
-        form.add(new Label("Address"), 0, 0);
-        form.add(addressField, 1, 0);
-        form.add(new Label("Property Type"), 0, 1);
-        form.add(typeField, 1, 1);
-
-        dialog.getDialogPane().setContent(form);
+        cancelButton.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-text-fill: #111827;" +
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-border-color: #d1d5db;" +
+                "-fx-border-radius: 10;" +
+                "-fx-background-radius: 10;" +
+                "-fx-padding: 8 20 8 20;" +
+                "-fx-cursor: hand;"
+        );
 
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isEmpty() || result.get() != saveButtonType) {
@@ -570,6 +696,11 @@ public class PropertyView {
     private void updateFooter() {
         int count = filteredProperties.size();
         tableFooterLabel.setText("Showing " + count + (count == 1 ? " property" : " properties"));
+    }
+
+    private boolean isMaintenanceStaff() {
+        String role = SessionManager.getRole();
+        return role != null && role.equalsIgnoreCase("MAINTENANCE_STAFF");
     }
 
     private String toReference(String propertyId) {
@@ -655,8 +786,8 @@ public class PropertyView {
             return "-";
         }
 
-        return role.replace("_", " ").toLowerCase()
-                .replaceFirst("^.", String.valueOf(Character.toUpperCase(role.replace("_", " ").toLowerCase().charAt(0))));
+        String formatted = role.replace("_", " ").toLowerCase();
+        return Character.toUpperCase(formatted.charAt(0)) + formatted.substring(1);
     }
 
     private String safe(String value) {
