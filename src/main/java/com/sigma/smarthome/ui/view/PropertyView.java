@@ -65,11 +65,16 @@ public class PropertyView {
     private final FilteredList<Property> filteredProperties = new FilteredList<>(propertyData, p -> true);
     private final SortedList<Property> sortedProperties = new SortedList<>(filteredProperties);
 
-    private final PropertyApiService propertyApiService = new PropertyApiService();
+    private final PropertyApiService propertyApiService;
 
     private final boolean readOnlyAccess;
 
     public PropertyView() {
+        this(new PropertyApiService());
+    }
+
+    public PropertyView(PropertyApiService propertyApiService) {
+        this.propertyApiService = propertyApiService;
         this.readOnlyAccess = isMaintenanceStaff();
         initialise();
         loadProperties();
