@@ -53,13 +53,13 @@
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
         </dependency>
-        
+
         <dependency>
-		    <groupId>org.openjfx</groupId>
-		    <artifactId>javafx-swing</artifactId>
-		    <version>${javafx.version}</version>
-		    <scope>test</scope>
-		</dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>${javafx.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -114,7 +114,12 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
-
+                <configuration>
+                    <excludes>
+                        <exclude>com/sigma/smarthome/ui/app/MainApp*</exclude>
+                        <exclude>com/sigma/smarthome/ui/view/PropertyView*</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
 
                     <execution>
