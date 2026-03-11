@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
@@ -12,13 +12,22 @@
     <name>SmartHomeMaintenanceUI</name>
 
     <properties>
+        <!-- Java -->
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Versions -->
         <javafx.version>21</javafx.version>
         <junit.version>5.10.2</junit.version>
         <mockito.version>5.11.0</mockito.version>
         <testfx.version>4.0.18</testfx.version>
         <jacoco.version>0.8.11</jacoco.version>
+
+        <!-- Sonar coverage report -->
+        <sonar.coverage.jacoco.xmlReportPaths>
+            target/site/jacoco/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <dependencies>
@@ -79,13 +88,14 @@
     <build>
         <plugins>
 
-            <!-- Compiler -->
+            <!-- Maven Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
                     <release>21</release>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
 
@@ -99,7 +109,7 @@
                 </configuration>
             </plugin>
 
-            <!-- JavaFX -->
+            <!-- JavaFX Plugin -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
@@ -109,28 +119,33 @@
                 </configuration>
             </plugin>
 
-            <!-- Code Coverage -->
+            <!-- JaCoCo Coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+
                 <configuration>
                     <excludes>
+                        <!-- Main JavaFX app is hard to unit test -->
                         <exclude>com/sigma/smarthome/ui/app/MainApp*</exclude>
-                        <exclude>com/sigma/smarthome/ui/view/PropertyView*</exclude>
                     </excludes>
                 </configuration>
+
                 <executions>
 
+                    <!-- Attach JaCoCo agent -->
                     <execution>
+                        <id>prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
 
+                    <!-- Generate coverage report -->
                     <execution>
                         <id>report</id>
-                        <phase>test</phase>
+                        <phase>verify</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
