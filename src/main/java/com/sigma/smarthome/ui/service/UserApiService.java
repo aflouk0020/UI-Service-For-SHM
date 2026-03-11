@@ -8,19 +8,26 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 
 public class UserApiService {
 
-    private static final String BASE_URL = "http://localhost:8081";
+    private static final String DEFAULT_BASE_URL = "http://localhost:8081";
     private static final String LOGIN_ENDPOINT = "/auth/login";
     private static final String REGISTER_ENDPOINT = "/auth/register";
 
+    private final String baseUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
     public UserApiService() {
+        this(DEFAULT_BASE_URL);
+    }
+
+    public UserApiService(String baseUrl) {
+        this.baseUrl = baseUrl;
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
     }
@@ -34,7 +41,7 @@ public class UserApiService {
         );
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + LOGIN_ENDPOINT))
+                .uri(URI.create(baseUrl + LOGIN_ENDPOINT))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
@@ -42,19 +49,25 @@ public class UserApiService {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() >= 200 && response.statusCode() < 300) {
-            JsonNode jsonNode = objectMapper.readTree(response.body());
+            JsonNode json = objectMapper.readTree(response.body());
+            String accessToken = json.path("accessToken").asText(null);
 
-            if (!jsonNode.has("accessToken")) {
-                throw new IllegalStateException("Login succeeded but accessToken was not found.");
+            if (accessToken == null || accessToken.isBlank()) {
+                throw new RuntimeException("Login failed. Missing access token in response.");
             }
 
-            String accessToken = jsonNode.get("accessToken").asText();
-            JwtUserInfo jwtUserInfo = extractUserInfoFromToken(accessToken);
+            JwtUserInfo userInfo = extractUserInfoFromJwt(accessToken);
 
-            return new LoginResult(accessToken, jwtUserInfo.email(), jwtUserInfo.role());
+            return new LoginResult(
+                    accessToken,
+                    userInfo.email(),
+                    userInfo.role()
+            );
         }
 
-        throw new RuntimeException("Login failed. HTTP " + response.statusCode() + " - " + response.body());
+        throw new RuntimeException(
+                "Login failed. HTTP " + response.statusCode() + " - " + response.body()
+        );
     }
 
     public String register(String email, String password, String role) throws IOException, InterruptedException {
@@ -67,7 +80,7 @@ public class UserApiService {
         );
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + REGISTER_ENDPOINT))
+                .uri(URI.create(baseUrl + REGISTER_ENDPOINT))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
@@ -75,32 +88,40 @@ public class UserApiService {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() >= 200 && response.statusCode() < 300) {
-            JsonNode jsonNode = objectMapper.readTree(response.body());
+            JsonNode json = objectMapper.readTree(response.body());
+            String registeredEmail = json.path("email").asText(null);
 
-            if (jsonNode.has("email")) {
-                return jsonNode.get("email").asText();
+            if (registeredEmail == null || registeredEmail.isBlank()) {
+                throw new RuntimeException("Registration failed. Missing email in response.");
             }
 
-            return response.body();
+            return registeredEmail;
         }
 
-        throw new RuntimeException("Registration failed. HTTP " + response.statusCode() + " - " + response.body());
+        throw new RuntimeException(
+                "Registration failed. HTTP " + response.statusCode() + " - " + response.body()
+        );
     }
 
-    private JwtUserInfo extractUserInfoFromToken(String token) throws IOException {
-        String[] tokenParts = token.split("\\.");
+    private JwtUserInfo extractUserInfoFromJwt(String jwt) {
+        try {
+            String[] parts = jwt.split("\\.");
+            if (parts.length < 2) {
+                throw new RuntimeException("Invalid JWT format.");
+            }
 
-        if (tokenParts.length < 2) {
-            throw new IllegalArgumentException("Invalid JWT token.");
+            byte[] decodedPayload = Base64.getUrlDecoder().decode(parts[1]);
+            String payloadJson = new String(decodedPayload, StandardCharsets.UTF_8);
+
+            JsonNode payload = objectMapper.readTree(payloadJson);
+
+            String email = payload.path("email").asText("");
+            String role = payload.path("role").asText("");
+
+            return new JwtUserInfo(email, role);
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to parse JWT token.", ex);
         }
-
-        String payloadJson = new String(Base64.getUrlDecoder().decode(tokenParts[1]));
-        JsonNode payloadNode = objectMapper.readTree(payloadJson);
-
-        String email = payloadNode.has("email") ? payloadNode.get("email").asText() : "Unknown";
-        String role = payloadNode.has("role") ? payloadNode.get("role").asText() : "Unknown";
-
-        return new JwtUserInfo(email, role);
     }
 
     private record JwtUserInfo(String email, String role) {

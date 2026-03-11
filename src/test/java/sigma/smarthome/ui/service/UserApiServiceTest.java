@@ -1,12 +1,11 @@
 package sigma.smarthome.ui.service;
 
 import com.sigma.smarthome.ui.service.UserApiService;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -19,10 +18,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class UserApiServiceTest {
 
     private static HttpServer server;
+    private static String baseUrl;
 
     @BeforeAll
     static void startServer() throws IOException {
-        server = HttpServer.create(new InetSocketAddress(8081), 0);
+        server = HttpServer.create(new InetSocketAddress(0), 0);
 
         server.createContext("/auth/login", exchange -> {
             if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
@@ -32,7 +32,8 @@ class UserApiServiceTest {
 
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
 
-            if (body.contains("\"email\":\"test@example.com\"") && body.contains("\"password\":\"Password123!\"")) {
+            if (body.contains("\"email\":\"test@example.com\"")
+                    && body.contains("\"password\":\"Password123!\"")) {
                 String token = buildFakeJwt("test@example.com", "PROPERTY_MANAGER");
                 sendResponse(exchange, 200, "{\"accessToken\":\"" + token + "\"}");
             } else {
@@ -56,6 +57,7 @@ class UserApiServiceTest {
         });
 
         server.start();
+        baseUrl = "http://localhost:" + server.getAddress().getPort();
     }
 
     @AfterAll
@@ -67,7 +69,7 @@ class UserApiServiceTest {
 
     @Test
     void login_success_returnsAccessTokenEmailAndRole() throws Exception {
-        UserApiService service = new UserApiService();
+        UserApiService service = new UserApiService(baseUrl);
 
         UserApiService.LoginResult result =
                 service.login("test@example.com", "Password123!");
@@ -80,7 +82,7 @@ class UserApiServiceTest {
 
     @Test
     void login_failure_throwsRuntimeException() {
-        UserApiService service = new UserApiService();
+        UserApiService service = new UserApiService(baseUrl);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 service.login("wrong@example.com", "wrongpass")
@@ -91,7 +93,7 @@ class UserApiServiceTest {
 
     @Test
     void register_success_returnsRegisteredEmail() throws Exception {
-        UserApiService service = new UserApiService();
+        UserApiService service = new UserApiService(baseUrl);
 
         String email = service.register("newuser@example.com", "Password123!", "PROPERTY_MANAGER");
 
@@ -100,7 +102,7 @@ class UserApiServiceTest {
 
     @Test
     void register_failure_throwsRuntimeException() {
-        UserApiService service = new UserApiService();
+        UserApiService service = new UserApiService(baseUrl);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 service.register("bad@example.com", "123", "PROPERTY_MANAGER")
