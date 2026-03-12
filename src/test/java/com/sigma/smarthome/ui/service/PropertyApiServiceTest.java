@@ -1,4 +1,4 @@
-package sigma.smarthome.ui.service;
+package com.sigma.smarthome.ui.service;
 
 import com.sigma.smarthome.ui.model.Property;
 import com.sigma.smarthome.ui.service.PropertyApiService;

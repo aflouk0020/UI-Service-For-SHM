@@ -1,4 +1,4 @@
-package sigma.smarthome.ui.model;
+package com.sigma.smarthome.ui.model;
 
 import com.sigma.smarthome.ui.model.Property;
 import org.junit.jupiter.api.Test;

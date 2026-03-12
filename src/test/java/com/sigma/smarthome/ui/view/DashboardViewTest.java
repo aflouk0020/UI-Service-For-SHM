@@ -1,6 +1,6 @@
-package sigma.smarthome.ui.view;
+package com.sigma.smarthome.ui.view;
 
-import com.sigma.smarthome.ui.view.PlaceholderView;
+import com.sigma.smarthome.ui.view.DashboardView;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Parent;
 import org.junit.jupiter.api.BeforeAll;
@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class PlaceholderViewTest {
+class DashboardViewTest {
 
     @BeforeAll
     static void initJavaFx() {
@@ -16,8 +16,14 @@ class PlaceholderViewTest {
     }
 
     @Test
-    void placeholderView_isCreatedSuccessfully() {
-        PlaceholderView view = new PlaceholderView("Dashboard", "Welcome message");
+    void dashboardView_loadsSuccessfully() {
+
+        DashboardView view = new DashboardView(
+                "test@example.com",
+                "PROPERTY_MANAGER",
+                () -> {}
+        );
+
         Parent root = view.getView();
 
         assertNotNull(root);
