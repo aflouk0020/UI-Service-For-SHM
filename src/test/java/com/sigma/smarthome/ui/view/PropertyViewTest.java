@@ -3,7 +3,6 @@ package com.sigma.smarthome.ui.view;
 import com.sigma.smarthome.ui.model.Property;
 import com.sigma.smarthome.ui.service.PropertyApiService;
 import com.sigma.smarthome.ui.util.SessionManager;
-import com.sigma.smarthome.ui.view.PropertyView;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
@@ -20,6 +19,8 @@ import java.lang.reflect.Field;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class PropertyViewTest {
@@ -34,21 +35,11 @@ class PropertyViewTest {
         SessionManager.clearSession();
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> T getPrivateField(Object target, String fieldName, Class<T> type) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return (T) field.get(target);
-    }
-
     @Test
-    void propertyView_createsSuccessfully_forPropertyManager() throws Exception {
+    void propertyView_createsSuccessfully_forPropertyManager() {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
 
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(List.of());
-
-        PropertyView view = new PropertyView(fakeService);
         Parent root = view.getView();
 
         assertNotNull(view);
@@ -56,23 +47,20 @@ class PropertyViewTest {
     }
 
     @Test
-    void propertyView_loadsPropertiesSuccessfully() throws Exception {
+    void propertyView_loadsPropertiesSuccessfully() {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        Property p1 = new Property("1", "Athlone", "House", "manager1");
-        Property p2 = new Property("2", "Dublin", "Apartment", "manager1");
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(List.of(p1, p2));
-
-        PropertyView view = new PropertyView(fakeService);
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "manager1"),
+                property("2", "Dublin", "Apartment", "manager1")
+        );
 
         assertNotNull(view);
         assertNotNull(view.getView());
     }
 
     @Test
-    void propertyView_handlesLoadFailure() throws Exception {
+    void propertyView_handlesLoadFailure() {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
         PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
@@ -85,112 +73,18 @@ class PropertyViewTest {
     }
 
     @Test
-    void propertyView_isReadOnlyForMaintenanceStaff() throws Exception {
+    void propertyView_isReadOnlyForMaintenanceStaff() {
         SessionManager.startSession("token", "staff@test.com", "MAINTENANCE_STAFF");
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(List.of());
-
-        PropertyView view = new PropertyView(fakeService);
+        PropertyView view = createView(List.of());
 
         assertNotNull(view);
-        assertNotNull(view.getView());
-    }
-
-    @Test
-    void propertyView_handlesMultipleReturnedProperties() throws Exception {
-        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "manager1"),
-                new Property("2", "Galway", "Apartment", "manager1"),
-                new Property("3", "Dublin", "Detached", "manager1")
-        );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
-
-        assertNotNull(view);
-        assertNotNull(view.getView());
-    }
-
-    @Test
-    void propertyView_createsSuccessfully_whenNoPropertiesExist() throws Exception {
-        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(List.of());
-
-        PropertyView view = new PropertyView(fakeService);
-
-        assertNotNull(view);
-        assertNotNull(view.getView());
-    }
-
-    @Test
-    void propertyView_handlesDifferentPropertyTypes() throws Exception {
-        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "manager1"),
-                new Property("2", "Athlone", "Apartment", "manager1"),
-                new Property("3", "Athlone", "Studio", "manager1")
-        );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
-
-        assertNotNull(view.getView());
-    }
-
-    @Test
-    void propertyView_handlesEmptyPropertyFields() throws Exception {
-        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-
-        List<Property> properties = List.of(
-                new Property("", "", "", "")
-        );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
-
-        assertNotNull(view.getView());
-    }
-
-    @Test
-    void propertyView_handlesLargePropertyList() throws Exception {
-        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-
-        List<Property> properties = List.of(
-                new Property("1", "A", "House", "m"),
-                new Property("2", "B", "House", "m"),
-                new Property("3", "C", "House", "m"),
-                new Property("4", "D", "House", "m"),
-                new Property("5", "E", "House", "m")
-        );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
-
         assertNotNull(view.getView());
     }
 
     @Test
     void propertyView_disablesWriteButtons_forMaintenanceStaff() throws Exception {
         SessionManager.startSession("token", "staff@test.com", "MAINTENANCE_STAFF");
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(List.of());
-
-        PropertyView view = new PropertyView(fakeService);
+        PropertyView view = createView(List.of());
 
         Button addButton = getPrivateField(view, "addButton", Button.class);
         Button editButton = getPrivateField(view, "editButton", Button.class);
@@ -207,11 +101,7 @@ class PropertyViewTest {
     @Test
     void propertyView_managerButtonsRemainEnabled() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(List.of());
-
-        PropertyView view = new PropertyView(fakeService);
+        PropertyView view = createView(List.of());
 
         Button addButton = getPrivateField(view, "addButton", Button.class);
         Button editButton = getPrivateField(view, "editButton", Button.class);
@@ -226,16 +116,11 @@ class PropertyViewTest {
     void propertyView_updatesSummaryCardsAndFooter() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "manager1"),
-                new Property("2", "Dublin", "Apartment", "manager1"),
-                new Property("3", "Galway", "House", "manager2")
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "manager1"),
+                property("2", "Dublin", "Apartment", "manager1"),
+                property("3", "Galway", "House", "manager2")
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         Label totalPropertiesValue = getPrivateField(view, "totalPropertiesValue", Label.class);
         Label uniqueTypesValue = getPrivateField(view, "uniqueTypesValue", Label.class);
@@ -282,16 +167,11 @@ class PropertyViewTest {
     void propertyView_populatesTypeFilterAndSearchFilterWorks() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "m1"),
-                new Property("2", "Dublin", "Apartment", "m2"),
-                new Property("3", "Galway", "Studio", "m3")
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Dublin", "Apartment", "m2"),
+                property("3", "Galway", "Studio", "m3")
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         ComboBox<String> propertyTypeFilter = getPrivateField(view, "propertyTypeFilter", ComboBox.class);
         TextField searchField = getPrivateField(view, "searchField", TextField.class);
@@ -314,16 +194,11 @@ class PropertyViewTest {
     void propertyView_typeFilter_reducesVisibleRowsAndUpdatesSummary() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "m1"),
-                new Property("2", "Dublin", "Apartment", "m2"),
-                new Property("3", "Galway", "House", "m3")
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Dublin", "Apartment", "m2"),
+                property("3", "Galway", "House", "m3")
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         ComboBox<String> propertyTypeFilter = getPrivateField(view, "propertyTypeFilter", ComboBox.class);
         TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
@@ -343,15 +218,10 @@ class PropertyViewTest {
     void propertyView_handlesNullAndBlankValuesInSummary() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        List<Property> properties = List.of(
-                new Property("", "", "", ""),
-                new Property(null, null, null, null)
+        PropertyView view = createView(
+                property("", "", "", ""),
+                property(null, null, null, null)
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         Label totalPropertiesValue = getPrivateField(view, "totalPropertiesValue", Label.class);
         Label uniqueTypesValue = getPrivateField(view, "uniqueTypesValue", Label.class);
@@ -368,15 +238,10 @@ class PropertyViewTest {
     void propertyView_searchWithNoMatch_showsEmptyTableAndUpdatesFooter() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "m1"),
-                new Property("2", "Dublin", "Apartment", "m2")
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Dublin", "Apartment", "m2")
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         TextField searchField = getPrivateField(view, "searchField", TextField.class);
         TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
@@ -398,16 +263,11 @@ class PropertyViewTest {
     void propertyView_clearingSearch_restoresAllRows() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "m1"),
-                new Property("2", "Dublin", "Apartment", "m2"),
-                new Property("3", "Galway", "Studio", "m3")
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Dublin", "Apartment", "m2"),
+                property("3", "Galway", "Studio", "m3")
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         TextField searchField = getPrivateField(view, "searchField", TextField.class);
         TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
@@ -426,16 +286,11 @@ class PropertyViewTest {
     void propertyView_combinedSearchAndTypeFilter_appliesBothFilters() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "m1"),
-                new Property("2", "Athlone West", "Apartment", "m2"),
-                new Property("3", "Dublin", "House", "m3")
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Athlone West", "Apartment", "m2"),
+                property("3", "Dublin", "House", "m3")
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         ComboBox<String> propertyTypeFilter = getPrivateField(view, "propertyTypeFilter", ComboBox.class);
         TextField searchField = getPrivateField(view, "searchField", TextField.class);
@@ -458,15 +313,10 @@ class PropertyViewTest {
     void propertyView_search_isCaseInsensitive() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "m1"),
-                new Property("2", "Dublin", "Apartment", "m2")
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Dublin", "Apartment", "m2")
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         TextField searchField = getPrivateField(view, "searchField", TextField.class);
         TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
@@ -481,16 +331,11 @@ class PropertyViewTest {
     void propertyView_typeFilter_withSingleMatchingType_updatesLatestPropertyCorrectly() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "m1"),
-                new Property("2", "Dublin", "Apartment", "m2"),
-                new Property("3", "Galway", "House", "m3")
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Dublin", "Apartment", "m2"),
+                property("3", "Galway", "House", "m3")
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         ComboBox<String> propertyTypeFilter = getPrivateField(view, "propertyTypeFilter", ComboBox.class);
         Label latestPropertyValue = getPrivateField(view, "latestPropertyValue", Label.class);
@@ -504,15 +349,10 @@ class PropertyViewTest {
     void propertyView_maintenanceStaffStillSeesLoadedData() throws Exception {
         SessionManager.startSession("token", "staff@test.com", "MAINTENANCE_STAFF");
 
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "m1"),
-                new Property("2", "Dublin", "Apartment", "m2")
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Dublin", "Apartment", "m2")
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
         Label totalPropertiesValue = getPrivateField(view, "totalPropertiesValue", Label.class);
@@ -527,16 +367,11 @@ class PropertyViewTest {
     void propertyView_duplicatePropertyTypes_onlyAppearOnceInFilter() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
-        List<Property> properties = List.of(
-                new Property("1", "Athlone", "House", "m1"),
-                new Property("2", "Dublin", "House", "m2"),
-                new Property("3", "Galway", "Apartment", "m3")
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Dublin", "House", "m2"),
+                property("3", "Galway", "Apartment", "m3")
         );
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-
-        PropertyView view = new PropertyView(fakeService);
 
         ComboBox<String> propertyTypeFilter = getPrivateField(view, "propertyTypeFilter", ComboBox.class);
 
@@ -551,11 +386,7 @@ class PropertyViewTest {
     @Test
     void propertyView_emptyDataset_setsExpectedSummaryValues() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(List.of());
-
-        PropertyView view = new PropertyView(fakeService);
+        PropertyView view = createView(List.of());
 
         TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
         Label totalPropertiesValue = getPrivateField(view, "totalPropertiesValue", Label.class);
@@ -573,7 +404,7 @@ class PropertyViewTest {
     }
 
     @Test
-    void propertyView_serviceIsCalledOnceOnInitialLoad() throws Exception {
+    void propertyView_serviceIsCalledOnceOnInitialLoad() {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
         PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
@@ -581,6 +412,27 @@ class PropertyViewTest {
 
         new PropertyView(fakeService);
 
-        Mockito.verify(fakeService, Mockito.times(1)).getProperties();
+        verify(fakeService, times(1)).getProperties();
+    }
+
+    private PropertyView createView(List<Property> properties) {
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(properties);
+        return new PropertyView(fakeService);
+    }
+
+    private PropertyView createView(Property... properties) {
+        return createView(List.of(properties));
+    }
+
+    private Property property(String id, String address, String propertyType, String managerId) {
+        return new Property(id, address, propertyType, managerId);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T getPrivateField(Object target, String fieldName, Class<T> type) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (T) field.get(target);
     }
 }
