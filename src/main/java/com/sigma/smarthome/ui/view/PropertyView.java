@@ -573,6 +573,7 @@ public class PropertyView {
         if (currentSelection != null && types.contains(currentSelection)) {
             propertyTypeFilter.setValue(currentSelection);
         } else {
+            propertyTypeFilter.setValue(null);
             propertyTypeFilter.getSelectionModel().clearSelection();
         }
     }
