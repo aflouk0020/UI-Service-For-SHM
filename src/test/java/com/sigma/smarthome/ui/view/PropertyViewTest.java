@@ -671,4 +671,196 @@ class PropertyViewTest {
 
         assertEquals("House", propertyTypeFilter.getValue());
     }
+    
+    @Test
+    void propertyView_showMessage_setsSuccessState() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
+
+        Method method = PropertyView.class.getDeclaredMethod("showMessage", String.class, boolean.class);
+        method.setAccessible(true);
+        method.invoke(view, "Saved successfully.", false);
+
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+
+        assertEquals("Saved successfully.", messageLabel.getText());
+        assertTrue(messageLabel.isVisible());
+        assertTrue(messageLabel.isManaged());
+        assertTrue(messageLabel.getStyle().contains("#16a34a"));
+    }
+
+    @Test
+    void propertyView_showMessage_setsErrorState() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
+
+        Method method = PropertyView.class.getDeclaredMethod("showMessage", String.class, boolean.class);
+        method.setAccessible(true);
+        method.invoke(view, "Something went wrong.", true);
+
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+
+        assertEquals("Something went wrong.", messageLabel.getText());
+        assertTrue(messageLabel.isVisible());
+        assertTrue(messageLabel.isManaged());
+        assertTrue(messageLabel.getStyle().contains("#dc2626"));
+    }
+
+    @Test
+    void propertyView_hideMessage_clearsMessageState() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
+
+        Method showMethod = PropertyView.class.getDeclaredMethod("showMessage", String.class, boolean.class);
+        showMethod.setAccessible(true);
+        showMethod.invoke(view, "Temporary message", false);
+
+        Method hideMethod = PropertyView.class.getDeclaredMethod("hideMessage");
+        hideMethod.setAccessible(true);
+        hideMethod.invoke(view);
+
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+
+        assertEquals("", messageLabel.getText());
+        assertFalse(messageLabel.isVisible());
+        assertFalse(messageLabel.isManaged());
+    }
+
+    @Test
+    void propertyView_refreshFilterOptions_clearsInvalidSelection() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Dublin", "Apartment", "m2")
+        );
+
+        ComboBox<String> propertyTypeFilter = getPrivateField(view, "propertyTypeFilter", ComboBox.class);
+        propertyTypeFilter.setValue("Studio");
+
+        Method method = PropertyView.class.getDeclaredMethod("refreshFilterOptions");
+        method.setAccessible(true);
+        method.invoke(view);
+
+        assertNull(propertyTypeFilter.getValue());
+    }
+
+    @Test
+    void propertyView_toReference_shortValue_formatsCorrectly() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
+
+        Method method = PropertyView.class.getDeclaredMethod("toReference", String.class);
+        method.setAccessible(true);
+
+        String result = (String) method.invoke(view, "abc123");
+
+        assertEquals("PROP-ABC123", result);
+    }
+
+    @Test
+    void propertyView_toReference_blankValue_returnsDash() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
+
+        Method method = PropertyView.class.getDeclaredMethod("toReference", String.class);
+        method.setAccessible(true);
+
+        String result = (String) method.invoke(view, "   ");
+
+        assertEquals("-", result);
+    }
+
+    @Test
+    void propertyView_formatRole_blankValue_returnsDash() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
+
+        Method method = PropertyView.class.getDeclaredMethod("formatRole", String.class);
+        method.setAccessible(true);
+
+        String result = (String) method.invoke(view, " ");
+
+        assertEquals("-", result);
+    }
+
+    @Test
+    void propertyView_createEmptyStateLabel_returnsExpectedText() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
+
+        Method method = PropertyView.class.getDeclaredMethod("createEmptyStateLabel");
+        method.setAccessible(true);
+
+        Label label = (Label) method.invoke(view);
+
+        assertEquals("No properties match the current view.", label.getText());
+        assertTrue(label.getStyle().contains("-fx-font-size"));
+    }
+
+    @Test
+    void propertyView_styleHelpers_returnNonEmptyStyles() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
+
+        Method commonFieldStyle = PropertyView.class.getDeclaredMethod("commonFieldStyle");
+        Method dialogFieldStyle = PropertyView.class.getDeclaredMethod("dialogFieldStyle");
+        Method cardStyle = PropertyView.class.getDeclaredMethod("cardStyle");
+        Method tableCardStyle = PropertyView.class.getDeclaredMethod("tableCardStyle");
+        Method messageStyle = PropertyView.class.getDeclaredMethod("messageStyle", String.class);
+
+        commonFieldStyle.setAccessible(true);
+        dialogFieldStyle.setAccessible(true);
+        cardStyle.setAccessible(true);
+        tableCardStyle.setAccessible(true);
+        messageStyle.setAccessible(true);
+
+        String common = (String) commonFieldStyle.invoke(view);
+        String dialog = (String) dialogFieldStyle.invoke(view);
+        String card = (String) cardStyle.invoke(view);
+        String tableCard = (String) tableCardStyle.invoke(view);
+        String message = (String) messageStyle.invoke(view, "#000000");
+
+        assertTrue(common.contains("-fx-background-color"));
+        assertTrue(dialog.contains("-fx-border-color"));
+        assertTrue(card.contains("-fx-effect"));
+        assertTrue(tableCard.contains("-fx-effect"));
+        assertTrue(message.contains("-fx-text-fill"));
+    }
+
+    @Test
+    void propertyView_searchMatchesReferenceValue() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        PropertyView view = createView(
+                property("abc12345", "Athlone", "House", "m1"),
+                property("xyz99999", "Dublin", "Apartment", "m2")
+        );
+
+        TextField searchField = getPrivateField(view, "searchField", TextField.class);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+
+        searchField.setText("PROP-ABC12345");
+
+        assertEquals(1, propertyTable.getItems().size());
+        assertEquals("Athlone", propertyTable.getItems().get(0).getAddress());
+    }
+
+    @Test
+    void propertyView_searchMatchesManagerId() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "manager-a"),
+                property("2", "Dublin", "Apartment", "manager-b")
+        );
+
+        TextField searchField = getPrivateField(view, "searchField", TextField.class);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+
+        searchField.setText("manager-b");
+
+        assertEquals(1, propertyTable.getItems().size());
+        assertEquals("Dublin", propertyTable.getItems().get(0).getAddress());
+    }
 }
