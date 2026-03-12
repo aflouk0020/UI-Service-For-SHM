@@ -23,14 +23,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class PropertyApiServiceTest {
 
     private static HttpServer server;
-
+    private static String baseUrl;
     private static final AtomicReference<String> lastAuthHeader = new AtomicReference<>();
     private static final AtomicReference<String> lastRequestBody = new AtomicReference<>();
     private static final AtomicReference<String> lastRequestPath = new AtomicReference<>();
 
     @BeforeAll
     static void startServer() throws IOException {
-        server = HttpServer.create(new InetSocketAddress(8082), 0);
+        server = HttpServer.create(new InetSocketAddress(0), 0);
 
         server.createContext("/properties", exchange -> {
             lastAuthHeader.set(exchange.getRequestHeaders().getFirst("Authorization"));
@@ -78,11 +78,6 @@ class PropertyApiServiceTest {
             sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
         });
 
-        server.createContext("/properties/fail", exchange -> {
-            lastAuthHeader.set(exchange.getRequestHeaders().getFirst("Authorization"));
-            sendResponse(exchange, 500, "{\"error\":\"Server error\"}");
-        });
-
         server.createContext("/properties/prop-1", exchange -> {
             lastAuthHeader.set(exchange.getRequestHeaders().getFirst("Authorization"));
             lastRequestPath.set(exchange.getRequestURI().getPath());
@@ -113,14 +108,18 @@ class PropertyApiServiceTest {
 
         server.createContext("/properties/prop-bad", exchange -> {
             lastAuthHeader.set(exchange.getRequestHeaders().getFirst("Authorization"));
+
             if ("PUT".equalsIgnoreCase(exchange.getRequestMethod()) || "DELETE".equalsIgnoreCase(exchange.getRequestMethod())) {
                 sendResponse(exchange, 404, "{\"error\":\"Not found\"}");
                 return;
             }
+
             sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
         });
 
-        server.start();
+        server.start(); // only once
+        int port = server.getAddress().getPort();
+        baseUrl = "http://localhost:" + port;
     }
 
     @AfterAll
@@ -138,9 +137,31 @@ class PropertyApiServiceTest {
         lastRequestPath.set(null);
     }
 
+
+
+    private static void sendResponse(HttpExchange exchange, int statusCode, String body) throws IOException {
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().add("Content-Type", "application/json");
+        exchange.sendResponseHeaders(statusCode, bytes.length);
+
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @Test
     void getProperties_success_returnsListAndSendsToken() throws Exception {
-        PropertyApiService service = new PropertyApiService();
+        PropertyApiService service = new PropertyApiService(baseUrl);
 
         List<Property> properties = service.getProperties();
 
@@ -152,7 +173,7 @@ class PropertyApiServiceTest {
 
     @Test
     void createProperty_success_returnsCreatedProperty() throws Exception {
-        PropertyApiService service = new PropertyApiService();
+        PropertyApiService service = new PropertyApiService(baseUrl);
 
         Property property = service.createProperty("Athlone", "House");
 
@@ -166,7 +187,7 @@ class PropertyApiServiceTest {
 
     @Test
     void updateProperty_success_returnsUpdatedProperty() throws Exception {
-        PropertyApiService service = new PropertyApiService();
+        PropertyApiService service = new PropertyApiService(baseUrl);
 
         Property property = service.updateProperty("prop-1", "Galway", "Apartment");
 
@@ -179,7 +200,7 @@ class PropertyApiServiceTest {
 
     @Test
     void deleteProperty_success_doesNotThrow() {
-        PropertyApiService service = new PropertyApiService();
+        PropertyApiService service = new PropertyApiService(baseUrl);
 
         assertDoesNotThrow(() -> service.deleteProperty("prop-1"));
         assertEquals("/properties/prop-1", lastRequestPath.get());
@@ -187,7 +208,7 @@ class PropertyApiServiceTest {
 
     @Test
     void updateProperty_failure_throwsRuntimeException() {
-        PropertyApiService service = new PropertyApiService();
+        PropertyApiService service = new PropertyApiService(baseUrl);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 service.updateProperty("prop-bad", "Nowhere", "Unknown")
@@ -198,22 +219,12 @@ class PropertyApiServiceTest {
 
     @Test
     void deleteProperty_failure_throwsRuntimeException() {
-        PropertyApiService service = new PropertyApiService();
+        PropertyApiService service = new PropertyApiService(baseUrl);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 service.deleteProperty("prop-bad")
         );
 
         assertTrue(ex.getMessage().contains("Failed to delete property"));
-    }
-
-    private static void sendResponse(HttpExchange exchange, int statusCode, String body) throws IOException {
-        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-        exchange.getResponseHeaders().add("Content-Type", "application/json");
-        exchange.sendResponseHeaders(statusCode, bytes.length);
-
-        try (OutputStream os = exchange.getResponseBody()) {
-            os.write(bytes);
-        }
     }
 }
