@@ -14,6 +14,22 @@ import javafx.scene.layout.VBox;
 
 public class RegisterView {
 
+    private static final String PRIMARY_BLUE = "#2563eb";
+    private static final String TEXT_DARK = "#1f2937";
+    private static final String TEXT_BODY = "#111827";
+    private static final String TEXT_MUTED = "#6b7280";
+    private static final String TEXT_ERROR = "#dc2626";
+    private static final String TEXT_SUCCESS = "#16a34a";
+    private static final String BORDER_LIGHT = "#d1d5db";
+    private static final String CARD_BORDER = "#e5e7eb";
+    private static final String FIELD_BACKGROUND = "#f9fafb";
+    private static final String PROMPT_TEXT = "#9ca3af";
+    private static final String WHITE = "white";
+
+    private static final String FONT_WEIGHT_BOLD = "-fx-font-weight: bold;";
+    private static final String BORDER_RADIUS_10 = "-fx-border-radius: 10;";
+    private static final String BACKGROUND_RADIUS_10 = "-fx-background-radius: 10;";
+
     private final BorderPane root = new BorderPane();
 
     private final TextField emailField = new TextField();
@@ -31,14 +47,31 @@ public class RegisterView {
     }
 
     private void initialise() {
+        configureRoot();
+        configureLabelsAndFields();
+        configureButtons();
+        configureMessageLabel();
+        configureProgressIndicator();
+        configureCard();
+    }
+
+    private void configureRoot() {
         root.setStyle("-fx-background-color: linear-gradient(to bottom right, #f8fafc, #eef2f7);");
+    }
 
+    private Label createTitleLabel() {
         Label titleLabel = new Label("Create Your Account");
-        titleLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1f2937;");
+        titleLabel.setStyle(buildTextStyle(28, true, TEXT_DARK));
+        return titleLabel;
+    }
 
+    private Label createSubtitleLabel() {
         Label subtitleLabel = new Label("Register to access the Smart Home Maintenance Platform");
-        subtitleLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #6b7280;");
+        subtitleLabel.setStyle(buildTextStyle(14, false, TEXT_MUTED));
+        return subtitleLabel;
+    }
 
+    private void configureLabelsAndFields() {
         emailField.setPromptText("Email");
         emailField.setPrefWidth(340);
         emailField.setPrefHeight(44);
@@ -54,45 +87,42 @@ public class RegisterView {
         roleComboBox.setPrefWidth(340);
         roleComboBox.setPrefHeight(44);
         roleComboBox.setStyle(commonFieldStyle());
+    }
 
+    private void configureButtons() {
         registerButton.setPrefWidth(340);
         registerButton.setPrefHeight(46);
-        registerButton.setStyle(
-                "-fx-background-color: #2563eb;" +
-                "-fx-background-radius: 10;" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 14px;" +
-                "-fx-font-weight: bold;"
-        );
+        registerButton.setStyle(primaryButtonStyle());
 
         backToLoginButton.setPrefWidth(340);
         backToLoginButton.setPrefHeight(42);
-        backToLoginButton.setStyle(
-                "-fx-background-color: #ffffff;" +
-                "-fx-border-color: #d1d5db;" +
-                "-fx-border-radius: 10;" +
-                "-fx-background-radius: 10;" +
-                "-fx-text-fill: #1f2937;" +
-                "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;"
-        );
+        backToLoginButton.setStyle(secondaryButtonStyle());
+    }
 
-        messageLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #dc2626;");
+    private void configureMessageLabel() {
+        messageLabel.setStyle(messageStyle(TEXT_ERROR));
         messageLabel.setVisible(false);
         messageLabel.setManaged(false);
+    }
 
+    private void configureProgressIndicator() {
         progressIndicator.setVisible(false);
         progressIndicator.setManaged(false);
         progressIndicator.setPrefSize(24, 24);
+    }
+
+    private void configureCard() {
+        Label titleLabel = createTitleLabel();
+        Label subtitleLabel = createSubtitleLabel();
 
         VBox card = new VBox(16);
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(36));
         card.setMaxWidth(460);
         card.setStyle(
-                "-fx-background-color: white;" +
+                "-fx-background-color: " + WHITE + ";" +
                 "-fx-background-radius: 18;" +
-                "-fx-border-color: #e5e7eb;" +
+                "-fx-border-color: " + CARD_BORDER + ";" +
                 "-fx-border-radius: 18;" +
                 "-fx-border-width: 1;" +
                 "-fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 18, 0.12, 0, 6);"
@@ -116,14 +146,43 @@ public class RegisterView {
     }
 
     private String commonFieldStyle() {
-        return "-fx-background-color: #f9fafb;" +
-               "-fx-background-radius: 10;" +
-               "-fx-border-color: #d1d5db;" +
-               "-fx-border-radius: 10;" +
+        return "-fx-background-color: " + FIELD_BACKGROUND + ";" +
+               BACKGROUND_RADIUS_10 +
+               "-fx-border-color: " + BORDER_LIGHT + ";" +
+               BORDER_RADIUS_10 +
                "-fx-border-width: 1;" +
                "-fx-font-size: 14px;" +
-               "-fx-text-fill: #111827;" +
-               "-fx-prompt-text-fill: #9ca3af;";
+               "-fx-text-fill: " + TEXT_BODY + ";" +
+               "-fx-prompt-text-fill: " + PROMPT_TEXT + ";";
+    }
+
+    private String primaryButtonStyle() {
+        return "-fx-background-color: " + PRIMARY_BLUE + ";" +
+               BACKGROUND_RADIUS_10 +
+               "-fx-text-fill: " + WHITE + ";" +
+               "-fx-font-size: 14px;" +
+               FONT_WEIGHT_BOLD;
+    }
+
+    private String secondaryButtonStyle() {
+        return "-fx-background-color: #ffffff;" +
+               "-fx-border-color: " + BORDER_LIGHT + ";" +
+               BORDER_RADIUS_10 +
+               BACKGROUND_RADIUS_10 +
+               "-fx-text-fill: " + TEXT_DARK + ";" +
+               "-fx-font-size: 13px;" +
+               FONT_WEIGHT_BOLD;
+    }
+
+    private String messageStyle(String color) {
+        return "-fx-font-size: 12px;" +
+               "-fx-text-fill: " + color + ";";
+    }
+
+    private String buildTextStyle(int fontSize, boolean bold, String color) {
+        return "-fx-font-size: " + fontSize + "px;" +
+               (bold ? FONT_WEIGHT_BOLD : "") +
+               "-fx-text-fill: " + color + ";";
     }
 
     public Parent getView() {
@@ -144,10 +203,8 @@ public class RegisterView {
 
     public void setMessage(String message, boolean isError) {
         messageLabel.setText(message == null ? "" : message);
-        messageLabel.setStyle(
-                "-fx-font-size: 12px;" +
-                "-fx-text-fill: " + (isError ? "#dc2626;" : "#16a34a;")
-        );
+        messageLabel.setStyle(messageStyle(isError ? TEXT_ERROR : TEXT_SUCCESS));
+
         boolean hasMessage = message != null && !message.isBlank();
         messageLabel.setVisible(hasMessage);
         messageLabel.setManaged(hasMessage);
@@ -167,10 +224,10 @@ public class RegisterView {
     }
 
     public void setOnRegister(Runnable action) {
-        registerButton.setOnAction(e -> action.run());
+        registerButton.setOnAction(event -> action.run());
     }
 
     public void setOnBackToLogin(Runnable action) {
-        backToLoginButton.setOnAction(e -> action.run());
+        backToLoginButton.setOnAction(event -> action.run());
     }
 }
