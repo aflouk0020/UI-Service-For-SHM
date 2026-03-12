@@ -15,8 +15,8 @@ import java.util.List;
 public class PropertyApiService {
 
     private static final String DEFAULT_BASE_URL = "http://localhost:8082";
-    private final String baseUrl;
 
+    private final String baseUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
@@ -38,13 +38,16 @@ public class PropertyApiService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            if (isSuccess(response.statusCode())) {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {});
             }
 
-            throw new RuntimeException("Failed to load properties. HTTP " + response.statusCode());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Failed to load properties", e);
+            throw new PropertyApiException("Failed to load properties. HTTP " + response.statusCode());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new PropertyApiException("Failed to load properties.", e);
+        } catch (IOException e) {
+            throw new PropertyApiException("Failed to load properties.", e);
         }
     }
 
@@ -61,13 +64,16 @@ public class PropertyApiService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            if (isSuccess(response.statusCode())) {
                 return objectMapper.readValue(response.body(), Property.class);
             }
 
-            throw new RuntimeException("Failed to create property. HTTP " + response.statusCode());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Failed to create property", e);
+            throw new PropertyApiException("Failed to create property. HTTP " + response.statusCode());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new PropertyApiException("Failed to create property.", e);
+        } catch (IOException e) {
+            throw new PropertyApiException("Failed to create property.", e);
         }
     }
 
@@ -84,13 +90,16 @@ public class PropertyApiService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            if (isSuccess(response.statusCode())) {
                 return objectMapper.readValue(response.body(), Property.class);
             }
 
-            throw new RuntimeException("Failed to update property. HTTP " + response.statusCode());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Failed to update property", e);
+            throw new PropertyApiException("Failed to update property. HTTP " + response.statusCode());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new PropertyApiException("Failed to update property.", e);
+        } catch (IOException e) {
+            throw new PropertyApiException("Failed to update property.", e);
         }
     }
 
@@ -102,18 +111,21 @@ public class PropertyApiService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            if (isSuccess(response.statusCode())) {
                 return;
             }
 
-            throw new RuntimeException("Failed to delete property. HTTP " + response.statusCode());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Failed to delete property", e);
+            throw new PropertyApiException("Failed to delete property. HTTP " + response.statusCode());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new PropertyApiException("Failed to delete property.", e);
+        } catch (IOException e) {
+            throw new PropertyApiException("Failed to delete property.", e);
         }
     }
 
     private HttpRequest.Builder baseRequest(String path) {
-    	String token = SessionManager.getAccessToken();
+        String token = SessionManager.getAccessToken();
 
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path));
@@ -125,6 +137,20 @@ public class PropertyApiService {
         return builder;
     }
 
+    private boolean isSuccess(int statusCode) {
+        return statusCode >= 200 && statusCode < 300;
+    }
+
     private record CreateOrUpdatePropertyRequest(String address, String propertyType) {
+    }
+
+    public static class PropertyApiException extends RuntimeException {
+        public PropertyApiException(String message) {
+            super(message);
+        }
+
+        public PropertyApiException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

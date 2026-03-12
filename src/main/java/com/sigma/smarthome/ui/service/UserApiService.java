@@ -18,6 +18,11 @@ public class UserApiService {
     private static final String LOGIN_ENDPOINT = "/auth/login";
     private static final String REGISTER_ENDPOINT = "/auth/register";
 
+    private static final String FIELD_EMAIL = "email";
+    private static final String FIELD_PASSWORD = "password";
+    private static final String FIELD_ROLE = "role";
+    private static final String FIELD_ACCESS_TOKEN = "accessToken";
+
     private final String baseUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -35,8 +40,8 @@ public class UserApiService {
     public LoginResult login(String email, String password) throws IOException, InterruptedException {
         String requestBody = objectMapper.writeValueAsString(
                 Map.of(
-                        "email", email,
-                        "password", password
+                        FIELD_EMAIL, email,
+                        FIELD_PASSWORD, password
                 )
         );
 
@@ -48,34 +53,34 @@ public class UserApiService {
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() >= 200 && response.statusCode() < 300) {
-            JsonNode json = objectMapper.readTree(response.body());
-            String accessToken = json.path("accessToken").asText(null);
-
-            if (accessToken == null || accessToken.isBlank()) {
-                throw new RuntimeException("Login failed. Missing access token in response.");
-            }
-
-            JwtUserInfo userInfo = extractUserInfoFromJwt(accessToken);
-
-            return new LoginResult(
-                    accessToken,
-                    userInfo.email(),
-                    userInfo.role()
+        if (!isSuccess(response.statusCode())) {
+            throw new UserApiException(
+                    "Login failed. HTTP " + response.statusCode() + " - " + response.body()
             );
         }
 
-        throw new RuntimeException(
-                "Login failed. HTTP " + response.statusCode() + " - " + response.body()
+        JsonNode json = objectMapper.readTree(response.body());
+        String accessToken = getNullableText(json, FIELD_ACCESS_TOKEN);
+
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new UserApiException("Login failed. Missing access token in response.");
+        }
+
+        JwtUserInfo userInfo = extractUserInfoFromJwt(accessToken);
+
+        return new LoginResult(
+                accessToken,
+                userInfo.email(),
+                userInfo.role()
         );
     }
 
     public String register(String email, String password, String role) throws IOException, InterruptedException {
         String requestBody = objectMapper.writeValueAsString(
                 Map.of(
-                        "email", email,
-                        "password", password,
-                        "role", role
+                        FIELD_EMAIL, email,
+                        FIELD_PASSWORD, password,
+                        FIELD_ROLE, role
                 )
         );
 
@@ -87,46 +92,69 @@ public class UserApiService {
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() >= 200 && response.statusCode() < 300) {
-            JsonNode json = objectMapper.readTree(response.body());
-            String registeredEmail = json.path("email").asText(null);
-
-            if (registeredEmail == null || registeredEmail.isBlank()) {
-                throw new RuntimeException("Registration failed. Missing email in response.");
-            }
-
-            return registeredEmail;
+        if (!isSuccess(response.statusCode())) {
+            throw new UserApiException(
+                    "Registration failed. HTTP " + response.statusCode() + " - " + response.body()
+            );
         }
 
-        throw new RuntimeException(
-                "Registration failed. HTTP " + response.statusCode() + " - " + response.body()
-        );
+        JsonNode json = objectMapper.readTree(response.body());
+        String registeredEmail = getNullableText(json, FIELD_EMAIL);
+
+        if (registeredEmail == null || registeredEmail.isBlank()) {
+            throw new UserApiException("Registration failed. Missing email in response.");
+        }
+
+        return registeredEmail;
     }
 
     private JwtUserInfo extractUserInfoFromJwt(String jwt) {
         try {
             String[] parts = jwt.split("\\.");
             if (parts.length < 2) {
-                throw new RuntimeException("Invalid JWT format.");
+                throw new UserApiException("Invalid JWT format.");
             }
 
             byte[] decodedPayload = Base64.getUrlDecoder().decode(parts[1]);
             String payloadJson = new String(decodedPayload, StandardCharsets.UTF_8);
-
             JsonNode payload = objectMapper.readTree(payloadJson);
 
-            String email = payload.path("email").asText("");
-            String role = payload.path("role").asText("");
+            String email = getTextOrEmpty(payload, FIELD_EMAIL);
+            String role = getTextOrEmpty(payload, FIELD_ROLE);
 
             return new JwtUserInfo(email, role);
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to parse JWT token.", ex);
+        } catch (IllegalArgumentException | IOException ex) {
+            throw new UserApiException("Failed to parse JWT token.", ex);
         }
+    }
+
+    private boolean isSuccess(int statusCode) {
+        return statusCode >= 200 && statusCode < 300;
+    }
+
+    private String getNullableText(JsonNode node, String fieldName) {
+        JsonNode fieldNode = node.get(fieldName);
+        return fieldNode == null || fieldNode.isNull() ? null : fieldNode.asText();
+    }
+
+    private String getTextOrEmpty(JsonNode node, String fieldName) {
+        JsonNode fieldNode = node.get(fieldName);
+        return fieldNode == null || fieldNode.isNull() ? "" : fieldNode.asText();
     }
 
     private record JwtUserInfo(String email, String role) {
     }
 
     public record LoginResult(String accessToken, String email, String role) {
+    }
+
+    public static class UserApiException extends RuntimeException {
+        public UserApiException(String message) {
+            super(message);
+        }
+
+        public UserApiException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

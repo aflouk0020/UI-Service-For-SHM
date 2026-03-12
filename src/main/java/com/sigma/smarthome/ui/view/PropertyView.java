@@ -22,8 +22,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -32,10 +30,11 @@ import javafx.scene.layout.VBox;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
 
 public class PropertyView {
 
+	private static final String READ_ONLY_MESSAGE = "Maintenance staff can view property information only.";
     private final VBox root = new VBox(22);
 
     private final Label sectionBadge = new Label("Property Service");
@@ -129,7 +128,7 @@ public class PropertyView {
         );
 
         if (readOnlyAccess) {
-            accessNoteLabel.setText("Maintenance staff can view property information only.");
+            accessNoteLabel.setText(READ_ONLY_MESSAGE);
             accessNoteLabel.setVisible(true);
             accessNoteLabel.setManaged(true);
         } else {
@@ -295,13 +294,10 @@ public class PropertyView {
 
         propertyTable.setRowFactory(tv -> {
             TableRow<Property> row = new TableRow<>();
-            row.itemProperty().addListener((obs, oldItem, newItem) -> {
-                if (newItem == null || row.isEmpty()) {
-                    row.setStyle("-fx-background-color: white;");
-                } else {
-                    row.setStyle("-fx-background-color: white;");
-                }
-            });
+
+            row.itemProperty().addListener((obs, oldItem, newItem) ->
+                    row.setStyle("-fx-background-color: white;")
+            );
 
             row.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
                 if (isSelected) {
@@ -371,16 +367,20 @@ public class PropertyView {
     }
 
     private void applyFilters() {
-        String searchText = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
+        String searchText = searchField.getText() == null
+                ? ""
+                : searchField.getText().trim().toLowerCase(java.util.Locale.ROOT);
+
         String selectedType = propertyTypeFilter.getValue();
 
         filteredProperties.setPredicate(property -> {
+
             boolean matchesSearch = searchText.isBlank()
-                    || safe(property.getAddress()).toLowerCase().contains(searchText)
-                    || safe(property.getId()).toLowerCase().contains(searchText)
-                    || safe(property.getManagerId()).toLowerCase().contains(searchText)
-                    || safe(property.getPropertyType()).toLowerCase().contains(searchText)
-                    || toReference(property.getId()).toLowerCase().contains(searchText);
+                    || safe(property.getAddress()).toLowerCase(java.util.Locale.ROOT).contains(searchText)
+                    || safe(property.getId()).toLowerCase(java.util.Locale.ROOT).contains(searchText)
+                    || safe(property.getManagerId()).toLowerCase(java.util.Locale.ROOT).contains(searchText)
+                    || safe(property.getPropertyType()).toLowerCase(java.util.Locale.ROOT).contains(searchText)
+                    || toReference(property.getId()).toLowerCase(java.util.Locale.ROOT).contains(searchText);
 
             boolean matchesType = selectedType == null
                     || selectedType.isBlank()
@@ -406,8 +406,7 @@ public class PropertyView {
             updateFooter();
 
             showMessage("Properties loaded successfully.", false);
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        } catch (RuntimeException ex) {
             propertyData.clear();
             refreshFilterOptions();
             applyFilters();
@@ -419,7 +418,7 @@ public class PropertyView {
 
     private void handleAddProperty() {
         if (readOnlyAccess) {
-            showMessage("Maintenance staff can view property information only.", true);
+            showMessage(READ_ONLY_MESSAGE, true);
             return;
         }
 
@@ -440,7 +439,7 @@ public class PropertyView {
 
             loadProperties();
             showMessage("Property created successfully.", false);
-        } catch (Exception ex) {
+        } catch (PropertyApiService.PropertyApiException ex) {
             ex.printStackTrace();
             showMessage("Failed to create property.", true);
         }
@@ -448,7 +447,7 @@ public class PropertyView {
 
     private void handleEditProperty() {
         if (readOnlyAccess) {
-            showMessage("Maintenance staff can view property information only.", true);
+            showMessage(READ_ONLY_MESSAGE, true);
             return;
         }
 
@@ -480,7 +479,7 @@ public class PropertyView {
 
             loadProperties();
             showMessage("Property updated successfully.", false);
-        } catch (Exception ex) {
+        } catch (PropertyApiService.PropertyApiException ex) {
             ex.printStackTrace();
             showMessage("Failed to update property.", true);
         }
@@ -488,7 +487,7 @@ public class PropertyView {
 
     private void handleDeleteProperty() {
         if (readOnlyAccess) {
-            showMessage("Maintenance staff can view property information only.", true);
+            showMessage(READ_ONLY_MESSAGE, true);
             return;
         }
 
@@ -517,7 +516,7 @@ public class PropertyView {
             propertyApiService.deleteProperty(selected.getId());
             loadProperties();
             showMessage("Property deleted successfully.", false);
-        } catch (Exception ex) {
+        } catch (PropertyApiService.PropertyApiException ex) {
             ex.printStackTrace();
             showMessage("Failed to delete property.", true);
         }
@@ -663,7 +662,7 @@ public class PropertyView {
                 .map(String::trim)
                 .distinct()
                 .sorted(String.CASE_INSENSITIVE_ORDER)
-                .collect(Collectors.toList());
+                .toList();
 
         propertyTypeFilter.setItems(FXCollections.observableArrayList(types));
 

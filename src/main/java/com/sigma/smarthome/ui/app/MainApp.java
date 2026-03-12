@@ -10,7 +10,14 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class MainApp extends Application {
+
+    private static final Logger LOGGER = Logger.getLogger(MainApp.class.getName());
+    private static final String APP_TITLE = "Smart Home Maintenance Platform";
 
     private final UserApiService userApiService = new UserApiService();
 
@@ -42,13 +49,18 @@ public class MainApp extends Application {
                         result.role()
                 );
 
-                System.out.println("LOGIN SUCCESS");
-                System.out.println("JWT TOKEN: " + result.accessToken());
-
+                LOGGER.info("Login successful for " + result.email());
                 showDashboard(stage);
 
-            } catch (Exception ex) {
-                ex.printStackTrace();
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                LOGGER.log(Level.SEVERE, "Login interrupted.", ex);
+                loginView.setMessage("Login was interrupted. Please try again.", true);
+            } catch (IOException ex) {
+                LOGGER.log(Level.SEVERE, "Login failed due to service communication error.", ex);
+                loginView.setMessage("Login failed. Check credentials or service connection.", true);
+            } catch (RuntimeException ex) {
+                LOGGER.log(Level.SEVERE, "Login failed.", ex);
                 loginView.setMessage("Login failed. Check credentials or service connection.", true);
             } finally {
                 loginView.setLoading(false);
@@ -58,7 +70,7 @@ public class MainApp extends Application {
         loginView.setOnCreateAccount(() -> showRegister(stage));
 
         Scene scene = new Scene(loginView.getView(), 1100, 700);
-        stage.setTitle("Smart Home Maintenance Platform");
+        stage.setTitle(APP_TITLE);
         stage.setScene(scene);
         stage.setMinWidth(950);
         stage.setMinHeight(650);
@@ -86,8 +98,15 @@ public class MainApp extends Application {
                 String registeredEmail = userApiService.register(email, password, role);
                 registerView.setMessage("Account created successfully for " + registeredEmail + ".", false);
 
-            } catch (Exception ex) {
-                ex.printStackTrace();
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                LOGGER.log(Level.SEVERE, "Registration interrupted.", ex);
+                registerView.setMessage("Registration was interrupted. Please try again.", true);
+            } catch (IOException ex) {
+                LOGGER.log(Level.SEVERE, "Registration failed due to service communication error.", ex);
+                registerView.setMessage("Registration failed. Check details or service connection.", true);
+            } catch (RuntimeException ex) {
+                LOGGER.log(Level.SEVERE, "Registration failed.", ex);
                 registerView.setMessage("Registration failed. Check details or service connection.", true);
             } finally {
                 registerView.setLoading(false);
@@ -97,7 +116,7 @@ public class MainApp extends Application {
         registerView.setOnBackToLogin(() -> showLogin(stage));
 
         Scene scene = new Scene(registerView.getView(), 1100, 700);
-        stage.setTitle("Smart Home Maintenance Platform");
+        stage.setTitle(APP_TITLE);
         stage.setScene(scene);
         stage.show();
     }
@@ -113,7 +132,7 @@ public class MainApp extends Application {
         );
 
         Scene scene = new Scene(dashboardView.getView(), 1280, 800);
-        stage.setTitle("Smart Home Maintenance Platform");
+        stage.setTitle(APP_TITLE);
         stage.setScene(scene);
         stage.setMinWidth(1100);
         stage.setMinHeight(700);
