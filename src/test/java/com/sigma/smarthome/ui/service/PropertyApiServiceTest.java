@@ -251,4 +251,44 @@ class PropertyApiServiceTest {
             outputStream.write(bytes);
         }
     }
+    
+    @Test
+    void getProperties_httpError_throwsException() {
+        PropertyApiService service = new PropertyApiService(baseUrl + "/invalid-base");
+
+        RuntimeException ex = assertThrows(RuntimeException.class, service::getProperties);
+
+        assertTrue(ex.getMessage().contains("Failed to load properties"));
+    }
+
+    @Test
+    void createProperty_httpError_throwsException() {
+        PropertyApiService service = new PropertyApiService(baseUrl);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                service.createProperty("Bad Address", "Bad Type")
+        );
+
+        assertTrue(ex.getMessage().contains("Failed to create property"));
+    }
+
+    @Test
+    void getProperties_connectionFailure_throwsException() {
+        PropertyApiService service = new PropertyApiService("http://localhost:1");
+
+        RuntimeException ex = assertThrows(RuntimeException.class, service::getProperties);
+
+        assertTrue(ex.getMessage().contains("Failed to load properties"));
+    }
+
+    @Test
+    void createProperty_connectionFailure_throwsException() {
+        PropertyApiService service = new PropertyApiService("http://localhost:1");
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                service.createProperty("Athlone", "House")
+        );
+
+        assertTrue(ex.getMessage().contains("Failed to create property"));
+    }
 }
