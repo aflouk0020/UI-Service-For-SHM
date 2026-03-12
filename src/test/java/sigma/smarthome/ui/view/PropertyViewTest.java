@@ -363,4 +363,224 @@ class PropertyViewTest {
         assertEquals("No properties", latestPropertyValue.getText());
         assertEquals("Showing 2 properties", tableFooterLabel.getText());
     }
+
+    @Test
+    void propertyView_searchWithNoMatch_showsEmptyTableAndUpdatesFooter() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        List<Property> properties = List.of(
+                new Property("1", "Athlone", "House", "m1"),
+                new Property("2", "Dublin", "Apartment", "m2")
+        );
+
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(properties);
+
+        PropertyView view = new PropertyView(fakeService);
+
+        TextField searchField = getPrivateField(view, "searchField", TextField.class);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        Label totalPropertiesValue = getPrivateField(view, "totalPropertiesValue", Label.class);
+        Label uniqueTypesValue = getPrivateField(view, "uniqueTypesValue", Label.class);
+        Label latestPropertyValue = getPrivateField(view, "latestPropertyValue", Label.class);
+        Label tableFooterLabel = getPrivateField(view, "tableFooterLabel", Label.class);
+
+        searchField.setText("Cork");
+
+        assertEquals(0, propertyTable.getItems().size());
+        assertEquals("0", totalPropertiesValue.getText());
+        assertEquals("0", uniqueTypesValue.getText());
+        assertEquals("No properties", latestPropertyValue.getText());
+        assertEquals("Showing 0 properties", tableFooterLabel.getText());
+    }
+
+    @Test
+    void propertyView_clearingSearch_restoresAllRows() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        List<Property> properties = List.of(
+                new Property("1", "Athlone", "House", "m1"),
+                new Property("2", "Dublin", "Apartment", "m2"),
+                new Property("3", "Galway", "Studio", "m3")
+        );
+
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(properties);
+
+        PropertyView view = new PropertyView(fakeService);
+
+        TextField searchField = getPrivateField(view, "searchField", TextField.class);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        Label tableFooterLabel = getPrivateField(view, "tableFooterLabel", Label.class);
+
+        searchField.setText("Dublin");
+        assertEquals(1, propertyTable.getItems().size());
+        assertEquals("Showing 1 property", tableFooterLabel.getText());
+
+        searchField.setText("");
+        assertEquals(3, propertyTable.getItems().size());
+        assertEquals("Showing 3 properties", tableFooterLabel.getText());
+    }
+
+    @Test
+    void propertyView_combinedSearchAndTypeFilter_appliesBothFilters() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        List<Property> properties = List.of(
+                new Property("1", "Athlone", "House", "m1"),
+                new Property("2", "Athlone West", "Apartment", "m2"),
+                new Property("3", "Dublin", "House", "m3")
+        );
+
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(properties);
+
+        PropertyView view = new PropertyView(fakeService);
+
+        ComboBox<String> propertyTypeFilter = getPrivateField(view, "propertyTypeFilter", ComboBox.class);
+        TextField searchField = getPrivateField(view, "searchField", TextField.class);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        Label totalPropertiesValue = getPrivateField(view, "totalPropertiesValue", Label.class);
+        Label uniqueTypesValue = getPrivateField(view, "uniqueTypesValue", Label.class);
+        Label tableFooterLabel = getPrivateField(view, "tableFooterLabel", Label.class);
+
+        propertyTypeFilter.setValue("House");
+        searchField.setText("Athlone");
+
+        assertEquals(1, propertyTable.getItems().size());
+        assertEquals("Athlone", propertyTable.getItems().get(0).getAddress());
+        assertEquals("1", totalPropertiesValue.getText());
+        assertEquals("1", uniqueTypesValue.getText());
+        assertEquals("Showing 1 property", tableFooterLabel.getText());
+    }
+
+    @Test
+    void propertyView_search_isCaseInsensitive() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        List<Property> properties = List.of(
+                new Property("1", "Athlone", "House", "m1"),
+                new Property("2", "Dublin", "Apartment", "m2")
+        );
+
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(properties);
+
+        PropertyView view = new PropertyView(fakeService);
+
+        TextField searchField = getPrivateField(view, "searchField", TextField.class);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+
+        searchField.setText("dUbLiN");
+
+        assertEquals(1, propertyTable.getItems().size());
+        assertEquals("Dublin", propertyTable.getItems().get(0).getAddress());
+    }
+
+    @Test
+    void propertyView_typeFilter_withSingleMatchingType_updatesLatestPropertyCorrectly() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        List<Property> properties = List.of(
+                new Property("1", "Athlone", "House", "m1"),
+                new Property("2", "Dublin", "Apartment", "m2"),
+                new Property("3", "Galway", "House", "m3")
+        );
+
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(properties);
+
+        PropertyView view = new PropertyView(fakeService);
+
+        ComboBox<String> propertyTypeFilter = getPrivateField(view, "propertyTypeFilter", ComboBox.class);
+        Label latestPropertyValue = getPrivateField(view, "latestPropertyValue", Label.class);
+
+        propertyTypeFilter.setValue("Apartment");
+
+        assertEquals("Dublin", latestPropertyValue.getText());
+    }
+
+    @Test
+    void propertyView_maintenanceStaffStillSeesLoadedData() throws Exception {
+        SessionManager.startSession("token", "staff@test.com", "MAINTENANCE_STAFF");
+
+        List<Property> properties = List.of(
+                new Property("1", "Athlone", "House", "m1"),
+                new Property("2", "Dublin", "Apartment", "m2")
+        );
+
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(properties);
+
+        PropertyView view = new PropertyView(fakeService);
+
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        Label totalPropertiesValue = getPrivateField(view, "totalPropertiesValue", Label.class);
+        Label activeRoleValue = getPrivateField(view, "activeRoleValue", Label.class);
+
+        assertEquals(2, propertyTable.getItems().size());
+        assertEquals("2", totalPropertiesValue.getText());
+        assertEquals("Maintenance staff", activeRoleValue.getText());
+    }
+
+    @Test
+    void propertyView_duplicatePropertyTypes_onlyAppearOnceInFilter() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        List<Property> properties = List.of(
+                new Property("1", "Athlone", "House", "m1"),
+                new Property("2", "Dublin", "House", "m2"),
+                new Property("3", "Galway", "Apartment", "m3")
+        );
+
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(properties);
+
+        PropertyView view = new PropertyView(fakeService);
+
+        ComboBox<String> propertyTypeFilter = getPrivateField(view, "propertyTypeFilter", ComboBox.class);
+
+        long houseCount = propertyTypeFilter.getItems().stream()
+                .filter("House"::equals)
+                .count();
+
+        assertEquals(1, houseCount);
+        assertTrue(propertyTypeFilter.getItems().contains("Apartment"));
+    }
+
+    @Test
+    void propertyView_emptyDataset_setsExpectedSummaryValues() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of());
+
+        PropertyView view = new PropertyView(fakeService);
+
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        Label totalPropertiesValue = getPrivateField(view, "totalPropertiesValue", Label.class);
+        Label uniqueTypesValue = getPrivateField(view, "uniqueTypesValue", Label.class);
+        Label latestPropertyValue = getPrivateField(view, "latestPropertyValue", Label.class);
+        Label tableFooterLabel = getPrivateField(view, "tableFooterLabel", Label.class);
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+
+        assertEquals(0, propertyTable.getItems().size());
+        assertEquals("0", totalPropertiesValue.getText());
+        assertEquals("0", uniqueTypesValue.getText());
+        assertEquals("No properties", latestPropertyValue.getText());
+        assertEquals("Showing 0 properties", tableFooterLabel.getText());
+        assertEquals("Properties loaded successfully.", messageLabel.getText());
+    }
+
+    @Test
+    void propertyView_serviceIsCalledOnceOnInitialLoad() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of());
+
+        new PropertyView(fakeService);
+
+        Mockito.verify(fakeService, Mockito.times(1)).getProperties();
+    }
 }
