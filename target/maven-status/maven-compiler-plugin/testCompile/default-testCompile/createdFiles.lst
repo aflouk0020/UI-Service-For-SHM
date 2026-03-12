@@ -1,0 +1,4 @@
+sigma/smarthome/ui/model/PropertyTest.class
+sigma/smarthome/ui/service/PropertyApiServiceTest.class
+sigma/smarthome/ui/util/SessionManagerTest.class
+com/sigma/smarthome/ui/service/UserApiServiceTest.class

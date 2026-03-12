@@ -1,0 +1,673 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PropertyView.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">SmartHomeMaintenanceUI</a> &gt; <a href="index.source.html" class="el_package">com.sigma.smarthome.ui.view</a> &gt; <span class="el_source">PropertyView.java</span></div><h1>PropertyView.java</h1><pre class="source lang-java linenums">package com.sigma.smarthome.ui.view;
+
+import com.sigma.smarthome.ui.model.Property;
+import com.sigma.smarthome.ui.service.PropertyApiService;
+import com.sigma.smarthome.ui.util.SessionManager;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class PropertyView {
+
+<span class="nc" id="L39">    private final VBox root = new VBox(22);</span>
+
+<span class="nc" id="L41">    private final Label sectionBadge = new Label(&quot;Property Service&quot;);</span>
+<span class="nc" id="L42">    private final Label titleLabel = new Label(&quot;Property Management&quot;);</span>
+<span class="nc" id="L43">    private final Label subtitleLabel = new Label(&quot;Manage residential properties connected to the platform.&quot;);</span>
+
+<span class="nc" id="L45">    private final Button refreshButton = new Button(&quot;Refresh&quot;);</span>
+<span class="nc" id="L46">    private final Button addButton = new Button(&quot;Add Property&quot;);</span>
+<span class="nc" id="L47">    private final Button editButton = new Button(&quot;Edit Selected&quot;);</span>
+<span class="nc" id="L48">    private final Button deleteButton = new Button(&quot;Delete Selected&quot;);</span>
+
+<span class="nc" id="L50">    private final TextField searchField = new TextField();</span>
+<span class="nc" id="L51">    private final ComboBox&lt;String&gt; propertyTypeFilter = new ComboBox&lt;&gt;();</span>
+<span class="nc" id="L52">    private final Button clearFiltersButton = new Button(&quot;Clear Filters&quot;);</span>
+
+<span class="nc" id="L54">    private final Label messageLabel = new Label();</span>
+
+<span class="nc" id="L56">    private final Label totalPropertiesValue = new Label(&quot;0&quot;);</span>
+<span class="nc" id="L57">    private final Label uniqueTypesValue = new Label(&quot;0&quot;);</span>
+<span class="nc" id="L58">    private final Label latestPropertyValue = new Label(&quot;No properties&quot;);</span>
+<span class="nc" id="L59">    private final Label activeRoleValue = new Label(&quot;-&quot;);</span>
+<span class="nc" id="L60">    private final Label tableFooterLabel = new Label(&quot;Showing 0 properties&quot;);</span>
+
+<span class="nc" id="L62">    private final TableView&lt;Property&gt; propertyTable = new TableView&lt;&gt;();</span>
+<span class="nc" id="L63">    private final ObservableList&lt;Property&gt; propertyData = FXCollections.observableArrayList();</span>
+<span class="nc" id="L64">    private final FilteredList&lt;Property&gt; filteredProperties = new FilteredList&lt;&gt;(propertyData, p -&gt; true);</span>
+<span class="nc" id="L65">    private final SortedList&lt;Property&gt; sortedProperties = new SortedList&lt;&gt;(filteredProperties);</span>
+
+<span class="nc" id="L67">    private final PropertyApiService propertyApiService = new PropertyApiService();</span>
+
+<span class="nc" id="L69">    public PropertyView() {</span>
+<span class="nc" id="L70">        initialise();</span>
+<span class="nc" id="L71">        loadProperties();</span>
+<span class="nc" id="L72">    }</span>
+
+    private void initialise() {
+<span class="nc" id="L75">        configureRoot();</span>
+<span class="nc" id="L76">        configureHeaderSection();</span>
+<span class="nc" id="L77">        configureActionBar();</span>
+<span class="nc" id="L78">        configureSummaryCards();</span>
+<span class="nc" id="L79">        configureFilterBar();</span>
+<span class="nc" id="L80">        configureMessageLabel();</span>
+<span class="nc" id="L81">        configureTable();</span>
+<span class="nc" id="L82">        configureFooter();</span>
+<span class="nc" id="L83">        wireFiltering();</span>
+<span class="nc" id="L84">    }</span>
+
+    private void configureRoot() {
+<span class="nc" id="L87">        root.setPadding(new Insets(28));</span>
+<span class="nc" id="L88">        root.setStyle(&quot;-fx-background-color: transparent;&quot;);</span>
+<span class="nc" id="L89">    }</span>
+
+    private void configureHeaderSection() {
+<span class="nc" id="L92">        sectionBadge.setStyle(</span>
+                &quot;-fx-background-color: #dbeafe;&quot; +
+                &quot;-fx-text-fill: #1d4ed8;&quot; +
+                &quot;-fx-font-size: 12px;&quot; +
+                &quot;-fx-font-weight: bold;&quot; +
+                &quot;-fx-padding: 6 12 6 12;&quot; +
+                &quot;-fx-background-radius: 14;&quot;
+        );
+
+<span class="nc" id="L101">        titleLabel.setStyle(</span>
+                &quot;-fx-font-size: 32px;&quot; +
+                &quot;-fx-font-weight: bold;&quot; +
+                &quot;-fx-text-fill: #111827;&quot;
+        );
+
+<span class="nc" id="L107">        subtitleLabel.setStyle(</span>
+                &quot;-fx-font-size: 15px;&quot; +
+                &quot;-fx-text-fill: #6b7280;&quot;
+        );
+
+<span class="nc" id="L112">        VBox headerBox = new VBox(10, sectionBadge, titleLabel, subtitleLabel);</span>
+<span class="nc" id="L113">        headerBox.setAlignment(Pos.TOP_LEFT);</span>
+
+<span class="nc" id="L115">        root.getChildren().add(headerBox);</span>
+<span class="nc" id="L116">    }</span>
+
+    private void configureActionBar() {
+<span class="nc" id="L119">        styleSecondaryButton(refreshButton);</span>
+<span class="nc" id="L120">        stylePrimaryButton(addButton);</span>
+<span class="nc" id="L121">        styleSecondaryButton(editButton);</span>
+<span class="nc" id="L122">        styleDangerButton(deleteButton);</span>
+
+<span class="nc" id="L124">        refreshButton.setOnAction(e -&gt; loadProperties());</span>
+<span class="nc" id="L125">        addButton.setOnAction(e -&gt; handleAddProperty());</span>
+<span class="nc" id="L126">        editButton.setOnAction(e -&gt; handleEditProperty());</span>
+<span class="nc" id="L127">        deleteButton.setOnAction(e -&gt; handleDeleteProperty());</span>
+
+<span class="nc" id="L129">        HBox buttonBar = new HBox(12, refreshButton, addButton, editButton, deleteButton);</span>
+<span class="nc" id="L130">        buttonBar.setAlignment(Pos.CENTER_LEFT);</span>
+
+<span class="nc" id="L132">        root.getChildren().add(buttonBar);</span>
+<span class="nc" id="L133">    }</span>
+
+    private void configureSummaryCards() {
+<span class="nc" id="L136">        activeRoleValue.setText(formatRole(SessionManager.getRole()));</span>
+
+<span class="nc" id="L138">        HBox cardsRow = new HBox(16,</span>
+<span class="nc" id="L139">                createSummaryCard(&quot;Total Properties&quot;, totalPropertiesValue),</span>
+<span class="nc" id="L140">                createSummaryCard(&quot;Property Types&quot;, uniqueTypesValue),</span>
+<span class="nc" id="L141">                createSummaryCard(&quot;Latest Property&quot;, latestPropertyValue),</span>
+<span class="nc" id="L142">                createSummaryCard(&quot;Active Role&quot;, activeRoleValue)</span>
+        );
+<span class="nc" id="L144">        cardsRow.setAlignment(Pos.CENTER_LEFT);</span>
+
+<span class="nc" id="L146">        root.getChildren().add(cardsRow);</span>
+<span class="nc" id="L147">    }</span>
+
+    private VBox createSummaryCard(String titleText, Label valueLabel) {
+<span class="nc" id="L150">        Label titleLabel = new Label(titleText);</span>
+<span class="nc" id="L151">        titleLabel.setStyle(</span>
+                &quot;-fx-font-size: 13px;&quot; +
+                &quot;-fx-font-weight: bold;&quot; +
+                &quot;-fx-text-fill: #6b7280;&quot;
+        );
+
+<span class="nc" id="L157">        valueLabel.setStyle(</span>
+                &quot;-fx-font-size: 22px;&quot; +
+                &quot;-fx-font-weight: bold;&quot; +
+                &quot;-fx-text-fill: #111827;&quot;
+        );
+
+<span class="nc" id="L163">        VBox card = new VBox(10, titleLabel, valueLabel);</span>
+<span class="nc" id="L164">        card.setPadding(new Insets(18));</span>
+<span class="nc" id="L165">        card.setPrefWidth(220);</span>
+<span class="nc" id="L166">        card.setMinHeight(96);</span>
+<span class="nc" id="L167">        card.setAlignment(Pos.CENTER_LEFT);</span>
+<span class="nc" id="L168">        card.setStyle(</span>
+                &quot;-fx-background-color: white;&quot; +
+                &quot;-fx-background-radius: 16;&quot; +
+                &quot;-fx-border-color: #e5e7eb;&quot; +
+                &quot;-fx-border-radius: 16;&quot; +
+                &quot;-fx-border-width: 1;&quot; +
+                &quot;-fx-effect: dropshadow(gaussian, rgba(15,23,42,0.05), 14, 0.10, 0, 4);&quot;
+        );
+<span class="nc" id="L176">        return card;</span>
+    }
+
+    private void configureFilterBar() {
+<span class="nc" id="L180">        searchField.setPromptText(&quot;Search by address, property ID, manager ID, or type&quot;);</span>
+<span class="nc" id="L181">        searchField.setPrefWidth(420);</span>
+<span class="nc" id="L182">        searchField.setPrefHeight(42);</span>
+<span class="nc" id="L183">        searchField.setStyle(commonFieldStyle());</span>
+
+<span class="nc" id="L185">        propertyTypeFilter.setPromptText(&quot;Filter by property type&quot;);</span>
+<span class="nc" id="L186">        propertyTypeFilter.setPrefWidth(220);</span>
+<span class="nc" id="L187">        propertyTypeFilter.setPrefHeight(42);</span>
+<span class="nc" id="L188">        propertyTypeFilter.setStyle(commonFieldStyle());</span>
+
+<span class="nc" id="L190">        styleSecondaryButton(clearFiltersButton);</span>
+<span class="nc" id="L191">        clearFiltersButton.setOnAction(e -&gt; {</span>
+<span class="nc" id="L192">            searchField.clear();</span>
+<span class="nc" id="L193">            propertyTypeFilter.getSelectionModel().clearSelection();</span>
+<span class="nc" id="L194">            applyFilters();</span>
+<span class="nc" id="L195">        });</span>
+
+<span class="nc" id="L197">        Region spacer = new Region();</span>
+<span class="nc" id="L198">        HBox.setHgrow(spacer, Priority.ALWAYS);</span>
+
+<span class="nc" id="L200">        HBox filterBar = new HBox(12, searchField, propertyTypeFilter, clearFiltersButton, spacer);</span>
+<span class="nc" id="L201">        filterBar.setAlignment(Pos.CENTER_LEFT);</span>
+
+<span class="nc" id="L203">        root.getChildren().add(filterBar);</span>
+<span class="nc" id="L204">    }</span>
+
+    private void configureMessageLabel() {
+<span class="nc" id="L207">        messageLabel.setStyle(</span>
+                &quot;-fx-font-size: 13px;&quot; +
+                &quot;-fx-font-weight: bold;&quot; +
+                &quot;-fx-text-fill: #dc2626;&quot;
+        );
+<span class="nc" id="L212">        messageLabel.setVisible(false);</span>
+<span class="nc" id="L213">        messageLabel.setManaged(false);</span>
+<span class="nc" id="L214">    }</span>
+
+    private void configureTable() {
+<span class="nc" id="L217">        TableColumn&lt;Property, String&gt; referenceColumn = new TableColumn&lt;&gt;(&quot;Reference&quot;);</span>
+<span class="nc" id="L218">        referenceColumn.setCellValueFactory(data -&gt;</span>
+<span class="nc" id="L219">                new ReadOnlyStringWrapper(toReference(data.getValue().getId()))</span>
+        );
+<span class="nc" id="L221">        referenceColumn.setPrefWidth(150);</span>
+
+<span class="nc" id="L223">        TableColumn&lt;Property, String&gt; idColumn = new TableColumn&lt;&gt;(&quot;Property ID&quot;);</span>
+<span class="nc" id="L224">        idColumn.setCellValueFactory(data -&gt;</span>
+<span class="nc" id="L225">                new ReadOnlyStringWrapper(safe(data.getValue().getId()))</span>
+        );
+<span class="nc" id="L227">        idColumn.setPrefWidth(255);</span>
+
+<span class="nc" id="L229">        TableColumn&lt;Property, String&gt; addressColumn = new TableColumn&lt;&gt;(&quot;Address&quot;);</span>
+<span class="nc" id="L230">        addressColumn.setCellValueFactory(data -&gt;</span>
+<span class="nc" id="L231">                new ReadOnlyStringWrapper(safe(data.getValue().getAddress()))</span>
+        );
+<span class="nc" id="L233">        addressColumn.setPrefWidth(260);</span>
+
+<span class="nc" id="L235">        TableColumn&lt;Property, String&gt; typeColumn = new TableColumn&lt;&gt;(&quot;Property Type&quot;);</span>
+<span class="nc" id="L236">        typeColumn.setCellValueFactory(data -&gt;</span>
+<span class="nc" id="L237">                new ReadOnlyStringWrapper(safe(data.getValue().getPropertyType()))</span>
+        );
+<span class="nc" id="L239">        typeColumn.setPrefWidth(170);</span>
+
+<span class="nc" id="L241">        TableColumn&lt;Property, String&gt; managerColumn = new TableColumn&lt;&gt;(&quot;Manager ID&quot;);</span>
+<span class="nc" id="L242">        managerColumn.setCellValueFactory(data -&gt;</span>
+<span class="nc" id="L243">                new ReadOnlyStringWrapper(safe(data.getValue().getManagerId()))</span>
+        );
+<span class="nc" id="L245">        managerColumn.setPrefWidth(255);</span>
+
+<span class="nc" id="L247">        propertyTable.getColumns().addAll(referenceColumn, idColumn, addressColumn, typeColumn, managerColumn);</span>
+<span class="nc" id="L248">        propertyTable.setItems(sortedProperties);</span>
+<span class="nc" id="L249">        sortedProperties.comparatorProperty().bind(propertyTable.comparatorProperty());</span>
+
+<span class="nc" id="L251">        propertyTable.setPrefHeight(560);</span>
+<span class="nc" id="L252">        propertyTable.setPlaceholder(createEmptyStateLabel());</span>
+<span class="nc" id="L253">        propertyTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);</span>
+<span class="nc" id="L254">        propertyTable.setFixedCellSize(42);</span>
+<span class="nc" id="L255">        propertyTable.setStyle(</span>
+                &quot;-fx-background-color: transparent;&quot; +
+                &quot;-fx-control-inner-background: white;&quot; +
+                &quot;-fx-table-cell-border-color: #eef2f7;&quot; +
+                &quot;-fx-padding: 0;&quot;
+        );
+
+<span class="nc" id="L262">        styleTableHeader(referenceColumn);</span>
+<span class="nc" id="L263">        styleTableHeader(idColumn);</span>
+<span class="nc" id="L264">        styleTableHeader(addressColumn);</span>
+<span class="nc" id="L265">        styleTableHeader(typeColumn);</span>
+<span class="nc" id="L266">        styleTableHeader(managerColumn);</span>
+
+<span class="nc" id="L268">        propertyTable.setRowFactory(tv -&gt; {</span>
+<span class="nc" id="L269">            TableRow&lt;Property&gt; row = new TableRow&lt;&gt;();</span>
+<span class="nc" id="L270">            row.itemProperty().addListener((obs, oldItem, newItem) -&gt; {</span>
+<span class="nc bnc" id="L271" title="All 4 branches missed.">                if (newItem == null || row.isEmpty()) {</span>
+<span class="nc" id="L272">                    row.setStyle(&quot;-fx-background-color: white;&quot;);</span>
+                } else {
+<span class="nc" id="L274">                    row.setStyle(&quot;-fx-background-color: white;&quot;);</span>
+                }
+<span class="nc" id="L276">            });</span>
+
+<span class="nc" id="L278">            row.selectedProperty().addListener((obs, wasSelected, isSelected) -&gt; {</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">                if (isSelected) {</span>
+<span class="nc" id="L280">                    row.setStyle(&quot;-fx-background-color: #eff6ff;&quot;);</span>
+                } else {
+<span class="nc" id="L282">                    row.setStyle(&quot;-fx-background-color: white;&quot;);</span>
+                }
+<span class="nc" id="L284">            });</span>
+
+<span class="nc" id="L286">            return row;</span>
+        });
+
+<span class="nc" id="L289">        VBox tableCard = new VBox(16, messageLabel, propertyTable, tableFooterLabel);</span>
+<span class="nc" id="L290">        tableCard.setPadding(new Insets(22));</span>
+<span class="nc" id="L291">        tableCard.setStyle(</span>
+                &quot;-fx-background-color: white;&quot; +
+                &quot;-fx-background-radius: 18;&quot; +
+                &quot;-fx-border-color: #e5e7eb;&quot; +
+                &quot;-fx-border-radius: 18;&quot; +
+                &quot;-fx-border-width: 1;&quot; +
+                &quot;-fx-effect: dropshadow(gaussian, rgba(15,23,42,0.05), 16, 0.10, 0, 6);&quot;
+        );
+
+<span class="nc" id="L300">        VBox.setVgrow(propertyTable, Priority.ALWAYS);</span>
+<span class="nc" id="L301">        root.getChildren().add(tableCard);</span>
+<span class="nc" id="L302">    }</span>
+
+    private Label createEmptyStateLabel() {
+<span class="nc" id="L305">        Label emptyLabel = new Label(&quot;No properties match the current view.&quot;);</span>
+<span class="nc" id="L306">        emptyLabel.setStyle(</span>
+                &quot;-fx-font-size: 14px;&quot; +
+                &quot;-fx-text-fill: #6b7280;&quot;
+        );
+<span class="nc" id="L310">        return emptyLabel;</span>
+    }
+
+    private void styleTableHeader(TableColumn&lt;Property, String&gt; column) {
+<span class="nc" id="L314">        column.setStyle(</span>
+                &quot;-fx-alignment: CENTER_LEFT;&quot; +
+                &quot;-fx-font-size: 13px;&quot; +
+                &quot;-fx-font-weight: bold;&quot;
+        );
+<span class="nc" id="L319">    }</span>
+
+    private void configureFooter() {
+<span class="nc" id="L322">        tableFooterLabel.setStyle(</span>
+                &quot;-fx-font-size: 13px;&quot; +
+                &quot;-fx-text-fill: #6b7280;&quot;
+        );
+<span class="nc" id="L326">    }</span>
+
+    private void wireFiltering() {
+<span class="nc" id="L329">        searchField.textProperty().addListener((obs, oldValue, newValue) -&gt; applyFilters());</span>
+<span class="nc" id="L330">        propertyTypeFilter.valueProperty().addListener((obs, oldValue, newValue) -&gt; applyFilters());</span>
+<span class="nc" id="L331">    }</span>
+
+    private void applyFilters() {
+<span class="nc bnc" id="L334" title="All 2 branches missed.">        String searchText = searchField.getText() == null ? &quot;&quot; : searchField.getText().trim().toLowerCase();</span>
+<span class="nc" id="L335">        String selectedType = propertyTypeFilter.getValue();</span>
+
+<span class="nc" id="L337">        filteredProperties.setPredicate(property -&gt; {</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">            boolean matchesSearch = searchText.isBlank()</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">                    || safe(property.getAddress()).toLowerCase().contains(searchText)</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">                    || safe(property.getId()).toLowerCase().contains(searchText)</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">                    || safe(property.getManagerId()).toLowerCase().contains(searchText)</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">                    || safe(property.getPropertyType()).toLowerCase().contains(searchText)</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">                    || toReference(property.getId()).toLowerCase().contains(searchText);</span>
+
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            boolean matchesType = selectedType == null</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">                    || selectedType.isBlank()</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">                    || selectedType.equalsIgnoreCase(safe(property.getPropertyType()));</span>
+
+<span class="nc bnc" id="L349" title="All 4 branches missed.">            return matchesSearch &amp;&amp; matchesType;</span>
+        });
+
+<span class="nc" id="L352">        updateSummaryCards();</span>
+<span class="nc" id="L353">        updateFooter();</span>
+<span class="nc" id="L354">    }</span>
+
+    private void loadProperties() {
+        try {
+<span class="nc" id="L358">            hideMessage();</span>
+
+<span class="nc" id="L360">            List&lt;Property&gt; properties = propertyApiService.getProperties();</span>
+<span class="nc" id="L361">            propertyData.setAll(properties);</span>
+
+<span class="nc" id="L363">            refreshFilterOptions();</span>
+<span class="nc" id="L364">            applyFilters();</span>
+<span class="nc" id="L365">            updateSummaryCards();</span>
+<span class="nc" id="L366">            updateFooter();</span>
+
+<span class="nc" id="L368">            showMessage(&quot;Properties loaded successfully.&quot;, false);</span>
+<span class="nc" id="L369">        } catch (Exception ex) {</span>
+<span class="nc" id="L370">            ex.printStackTrace();</span>
+<span class="nc" id="L371">            propertyData.clear();</span>
+<span class="nc" id="L372">            refreshFilterOptions();</span>
+<span class="nc" id="L373">            applyFilters();</span>
+<span class="nc" id="L374">            updateSummaryCards();</span>
+<span class="nc" id="L375">            updateFooter();</span>
+<span class="nc" id="L376">            showMessage(&quot;Failed to load properties. Check Property Service connection.&quot;, true);</span>
+<span class="nc" id="L377">        }</span>
+<span class="nc" id="L378">    }</span>
+
+    private void handleAddProperty() {
+        try {
+<span class="nc" id="L382">            Optional&lt;PropertyFormData&gt; result = showPropertyFormDialog(</span>
+                    &quot;Create Property&quot;,
+                    &quot;Enter the new property details.&quot;,
+                    null,
+                    null
+            );
+
+<span class="nc bnc" id="L389" title="All 2 branches missed.">            if (result.isEmpty()) {</span>
+<span class="nc" id="L390">                return;</span>
+            }
+
+<span class="nc" id="L393">            PropertyFormData formData = result.get();</span>
+<span class="nc" id="L394">            propertyApiService.createProperty(formData.address(), formData.propertyType());</span>
+
+<span class="nc" id="L396">            loadProperties();</span>
+<span class="nc" id="L397">            showMessage(&quot;Property created successfully.&quot;, false);</span>
+<span class="nc" id="L398">        } catch (Exception ex) {</span>
+<span class="nc" id="L399">            ex.printStackTrace();</span>
+<span class="nc" id="L400">            showMessage(&quot;Failed to create property.&quot;, true);</span>
+<span class="nc" id="L401">        }</span>
+<span class="nc" id="L402">    }</span>
+
+    private void handleEditProperty() {
+<span class="nc" id="L405">        Property selected = propertyTable.getSelectionModel().getSelectedItem();</span>
+
+<span class="nc bnc" id="L407" title="All 2 branches missed.">        if (selected == null) {</span>
+<span class="nc" id="L408">            showMessage(&quot;Please select a property to edit.&quot;, true);</span>
+<span class="nc" id="L409">            return;</span>
+        }
+
+        try {
+<span class="nc" id="L413">            Optional&lt;PropertyFormData&gt; result = showPropertyFormDialog(</span>
+                    &quot;Edit Property&quot;,
+                    &quot;Update the selected property details.&quot;,
+<span class="nc" id="L416">                    selected.getAddress(),</span>
+<span class="nc" id="L417">                    selected.getPropertyType()</span>
+            );
+
+<span class="nc bnc" id="L420" title="All 2 branches missed.">            if (result.isEmpty()) {</span>
+<span class="nc" id="L421">                return;</span>
+            }
+
+<span class="nc" id="L424">            PropertyFormData formData = result.get();</span>
+<span class="nc" id="L425">            propertyApiService.updateProperty(</span>
+<span class="nc" id="L426">                    selected.getId(),</span>
+<span class="nc" id="L427">                    formData.address(),</span>
+<span class="nc" id="L428">                    formData.propertyType()</span>
+            );
+
+<span class="nc" id="L431">            loadProperties();</span>
+<span class="nc" id="L432">            showMessage(&quot;Property updated successfully.&quot;, false);</span>
+<span class="nc" id="L433">        } catch (Exception ex) {</span>
+<span class="nc" id="L434">            ex.printStackTrace();</span>
+<span class="nc" id="L435">            showMessage(&quot;Failed to update property.&quot;, true);</span>
+<span class="nc" id="L436">        }</span>
+<span class="nc" id="L437">    }</span>
+
+    private void handleDeleteProperty() {
+<span class="nc" id="L440">        Property selected = propertyTable.getSelectionModel().getSelectedItem();</span>
+
+<span class="nc bnc" id="L442" title="All 2 branches missed.">        if (selected == null) {</span>
+<span class="nc" id="L443">            showMessage(&quot;Please select a property to delete.&quot;, true);</span>
+<span class="nc" id="L444">            return;</span>
+        }
+
+<span class="nc" id="L447">        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);</span>
+<span class="nc" id="L448">        confirmAlert.setTitle(&quot;Delete Property&quot;);</span>
+<span class="nc" id="L449">        confirmAlert.setHeaderText(&quot;Confirm property deletion&quot;);</span>
+<span class="nc" id="L450">        confirmAlert.setContentText(</span>
+                &quot;Are you sure you want to delete property &quot;
+<span class="nc" id="L452">                        + toReference(selected.getId())</span>
+                        + &quot;?&quot;
+        );
+
+<span class="nc" id="L456">        Optional&lt;ButtonType&gt; result = confirmAlert.showAndWait();</span>
+<span class="nc bnc" id="L457" title="All 4 branches missed.">        if (result.isEmpty() || result.get() != ButtonType.OK) {</span>
+<span class="nc" id="L458">            return;</span>
+        }
+
+        try {
+<span class="nc" id="L462">            propertyApiService.deleteProperty(selected.getId());</span>
+<span class="nc" id="L463">            loadProperties();</span>
+<span class="nc" id="L464">            showMessage(&quot;Property deleted successfully.&quot;, false);</span>
+<span class="nc" id="L465">        } catch (Exception ex) {</span>
+<span class="nc" id="L466">            ex.printStackTrace();</span>
+<span class="nc" id="L467">            showMessage(&quot;Failed to delete property.&quot;, true);</span>
+<span class="nc" id="L468">        }</span>
+<span class="nc" id="L469">    }</span>
+
+    private Optional&lt;PropertyFormData&gt; showPropertyFormDialog(
+            String title,
+            String header,
+            String defaultAddress,
+            String defaultPropertyType
+    ) {
+<span class="nc" id="L477">        Dialog&lt;ButtonType&gt; dialog = new Dialog&lt;&gt;();</span>
+<span class="nc" id="L478">        dialog.setTitle(title);</span>
+<span class="nc" id="L479">        dialog.setHeaderText(header);</span>
+
+<span class="nc" id="L481">        ButtonType saveButtonType = new ButtonType(&quot;Save&quot;, ButtonBar.ButtonData.OK_DONE);</span>
+<span class="nc" id="L482">        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);</span>
+
+<span class="nc bnc" id="L484" title="All 2 branches missed.">        TextField addressField = new TextField(defaultAddress == null ? &quot;&quot; : defaultAddress);</span>
+<span class="nc" id="L485">        addressField.setPromptText(&quot;Enter property address&quot;);</span>
+
+<span class="nc bnc" id="L487" title="All 2 branches missed.">        TextField typeField = new TextField(defaultPropertyType == null ? &quot;&quot; : defaultPropertyType);</span>
+<span class="nc" id="L488">        typeField.setPromptText(&quot;Enter property type&quot;);</span>
+
+<span class="nc" id="L490">        GridPane form = new GridPane();</span>
+<span class="nc" id="L491">        form.setHgap(14);</span>
+<span class="nc" id="L492">        form.setVgap(14);</span>
+<span class="nc" id="L493">        form.setPadding(new Insets(10, 0, 10, 0));</span>
+
+<span class="nc" id="L495">        ColumnConstraints labelColumn = new ColumnConstraints();</span>
+<span class="nc" id="L496">        labelColumn.setPrefWidth(110);</span>
+
+<span class="nc" id="L498">        ColumnConstraints fieldColumn = new ColumnConstraints();</span>
+<span class="nc" id="L499">        fieldColumn.setHgrow(Priority.ALWAYS);</span>
+
+<span class="nc" id="L501">        form.getColumnConstraints().addAll(labelColumn, fieldColumn);</span>
+
+<span class="nc" id="L503">        form.add(new Label(&quot;Address&quot;), 0, 0);</span>
+<span class="nc" id="L504">        form.add(addressField, 1, 0);</span>
+<span class="nc" id="L505">        form.add(new Label(&quot;Property Type&quot;), 0, 1);</span>
+<span class="nc" id="L506">        form.add(typeField, 1, 1);</span>
+
+<span class="nc" id="L508">        dialog.getDialogPane().setContent(form);</span>
+
+<span class="nc" id="L510">        Optional&lt;ButtonType&gt; result = dialog.showAndWait();</span>
+<span class="nc bnc" id="L511" title="All 4 branches missed.">        if (result.isEmpty() || result.get() != saveButtonType) {</span>
+<span class="nc" id="L512">            return Optional.empty();</span>
+        }
+
+<span class="nc bnc" id="L515" title="All 2 branches missed.">        String address = addressField.getText() == null ? &quot;&quot; : addressField.getText().trim();</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">        String propertyType = typeField.getText() == null ? &quot;&quot; : typeField.getText().trim();</span>
+
+<span class="nc bnc" id="L518" title="All 4 branches missed.">        if (address.isBlank() || propertyType.isBlank()) {</span>
+<span class="nc" id="L519">            showMessage(&quot;Address and property type are required.&quot;, true);</span>
+<span class="nc" id="L520">            return Optional.empty();</span>
+        }
+
+<span class="nc" id="L523">        return Optional.of(new PropertyFormData(address, propertyType));</span>
+    }
+
+    private void refreshFilterOptions() {
+<span class="nc" id="L527">        String currentSelection = propertyTypeFilter.getValue();</span>
+
+<span class="nc" id="L529">        List&lt;String&gt; types = propertyData.stream()</span>
+<span class="nc" id="L530">                .map(Property::getPropertyType)</span>
+<span class="nc bnc" id="L531" title="All 4 branches missed.">                .filter(type -&gt; type != null &amp;&amp; !type.isBlank())</span>
+<span class="nc" id="L532">                .map(String::trim)</span>
+<span class="nc" id="L533">                .distinct()</span>
+<span class="nc" id="L534">                .sorted(String.CASE_INSENSITIVE_ORDER)</span>
+<span class="nc" id="L535">                .collect(Collectors.toList());</span>
+
+<span class="nc" id="L537">        propertyTypeFilter.setItems(FXCollections.observableArrayList(types));</span>
+
+<span class="nc bnc" id="L539" title="All 4 branches missed.">        if (currentSelection != null &amp;&amp; types.contains(currentSelection)) {</span>
+<span class="nc" id="L540">            propertyTypeFilter.setValue(currentSelection);</span>
+        } else {
+<span class="nc" id="L542">            propertyTypeFilter.getSelectionModel().clearSelection();</span>
+        }
+<span class="nc" id="L544">    }</span>
+
+    private void updateSummaryCards() {
+<span class="nc" id="L547">        int total = filteredProperties.size();</span>
+<span class="nc" id="L548">        int uniqueTypes = (int) filteredProperties.stream()</span>
+<span class="nc" id="L549">                .map(Property::getPropertyType)</span>
+<span class="nc bnc" id="L550" title="All 4 branches missed.">                .filter(type -&gt; type != null &amp;&amp; !type.isBlank())</span>
+<span class="nc" id="L551">                .map(String::trim)</span>
+<span class="nc" id="L552">                .map(String::toLowerCase)</span>
+<span class="nc" id="L553">                .distinct()</span>
+<span class="nc" id="L554">                .count();</span>
+
+<span class="nc" id="L556">        Optional&lt;Property&gt; latest = filteredProperties.stream()</span>
+<span class="nc bnc" id="L557" title="All 4 branches missed.">                .filter(property -&gt; property.getId() != null &amp;&amp; !property.getId().isBlank())</span>
+<span class="nc" id="L558">                .max(Comparator.comparing(Property::getId));</span>
+
+<span class="nc" id="L560">        totalPropertiesValue.setText(String.valueOf(total));</span>
+<span class="nc" id="L561">        uniqueTypesValue.setText(String.valueOf(uniqueTypes));</span>
+<span class="nc" id="L562">        latestPropertyValue.setText(</span>
+<span class="nc" id="L563">                latest.map(property -&gt; safe(property.getAddress()))</span>
+<span class="nc bnc" id="L564" title="All 2 branches missed.">                        .filter(address -&gt; !address.isBlank())</span>
+<span class="nc" id="L565">                        .orElse(&quot;No properties&quot;)</span>
+        );
+<span class="nc" id="L567">        activeRoleValue.setText(formatRole(SessionManager.getRole()));</span>
+<span class="nc" id="L568">    }</span>
+
+    private void updateFooter() {
+<span class="nc" id="L571">        int count = filteredProperties.size();</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">        tableFooterLabel.setText(&quot;Showing &quot; + count + (count == 1 ? &quot; property&quot; : &quot; properties&quot;));</span>
+<span class="nc" id="L573">    }</span>
+
+    private String toReference(String propertyId) {
+<span class="nc bnc" id="L576" title="All 4 branches missed.">        if (propertyId == null || propertyId.isBlank()) {</span>
+<span class="nc" id="L577">            return &quot;-&quot;;</span>
+        }
+
+<span class="nc bnc" id="L580" title="All 2 branches missed.">        String shortened = propertyId.length() &gt;= 8 ? propertyId.substring(0, 8) : propertyId;</span>
+<span class="nc" id="L581">        return &quot;PROP-&quot; + shortened.toUpperCase();</span>
+    }
+
+    private void showMessage(String message, boolean isError) {
+<span class="nc" id="L585">        messageLabel.setText(message);</span>
+<span class="nc" id="L586">        messageLabel.setStyle(</span>
+                &quot;-fx-font-size: 13px;&quot; +
+                &quot;-fx-font-weight: bold;&quot; +
+<span class="nc bnc" id="L589" title="All 2 branches missed.">                &quot;-fx-text-fill: &quot; + (isError ? &quot;#dc2626;&quot; : &quot;#16a34a;&quot;)</span>
+        );
+<span class="nc" id="L591">        messageLabel.setVisible(true);</span>
+<span class="nc" id="L592">        messageLabel.setManaged(true);</span>
+<span class="nc" id="L593">    }</span>
+
+    private void hideMessage() {
+<span class="nc" id="L596">        messageLabel.setText(&quot;&quot;);</span>
+<span class="nc" id="L597">        messageLabel.setVisible(false);</span>
+<span class="nc" id="L598">        messageLabel.setManaged(false);</span>
+<span class="nc" id="L599">    }</span>
+
+    private void stylePrimaryButton(Button button) {
+<span class="nc" id="L602">        button.setPrefHeight(42);</span>
+<span class="nc" id="L603">        button.setStyle(</span>
+                &quot;-fx-background-color: #2563eb;&quot; +
+                &quot;-fx-text-fill: white;&quot; +
+                &quot;-fx-font-size: 13px;&quot; +
+                &quot;-fx-font-weight: bold;&quot; +
+                &quot;-fx-background-radius: 10;&quot; +
+                &quot;-fx-padding: 0 18 0 18;&quot; +
+                &quot;-fx-cursor: hand;&quot;
+        );
+<span class="nc" id="L612">    }</span>
+
+    private void styleSecondaryButton(Button button) {
+<span class="nc" id="L615">        button.setPrefHeight(42);</span>
+<span class="nc" id="L616">        button.setStyle(</span>
+                &quot;-fx-background-color: white;&quot; +
+                &quot;-fx-text-fill: #111827;&quot; +
+                &quot;-fx-font-size: 13px;&quot; +
+                &quot;-fx-font-weight: bold;&quot; +
+                &quot;-fx-border-color: #d1d5db;&quot; +
+                &quot;-fx-border-radius: 10;&quot; +
+                &quot;-fx-background-radius: 10;&quot; +
+                &quot;-fx-padding: 0 18 0 18;&quot; +
+                &quot;-fx-cursor: hand;&quot;
+        );
+<span class="nc" id="L627">    }</span>
+
+    private void styleDangerButton(Button button) {
+<span class="nc" id="L630">        button.setPrefHeight(42);</span>
+<span class="nc" id="L631">        button.setStyle(</span>
+                &quot;-fx-background-color: #ef4444;&quot; +
+                &quot;-fx-text-fill: white;&quot; +
+                &quot;-fx-font-size: 13px;&quot; +
+                &quot;-fx-font-weight: bold;&quot; +
+                &quot;-fx-background-radius: 10;&quot; +
+                &quot;-fx-padding: 0 18 0 18;&quot; +
+                &quot;-fx-cursor: hand;&quot;
+        );
+<span class="nc" id="L640">    }</span>
+
+    private String commonFieldStyle() {
+<span class="nc" id="L643">        return &quot;-fx-background-color: white;&quot; +</span>
+               &quot;-fx-background-radius: 10;&quot; +
+               &quot;-fx-border-color: #d1d5db;&quot; +
+               &quot;-fx-border-radius: 10;&quot; +
+               &quot;-fx-border-width: 1;&quot; +
+               &quot;-fx-font-size: 13px;&quot; +
+               &quot;-fx-text-fill: #111827;&quot; +
+               &quot;-fx-prompt-text-fill: #9ca3af;&quot;;
+    }
+
+    private String formatRole(String role) {
+<span class="nc bnc" id="L654" title="All 4 branches missed.">        if (role == null || role.isBlank()) {</span>
+<span class="nc" id="L655">            return &quot;-&quot;;</span>
+        }
+
+<span class="nc" id="L658">        return role.replace(&quot;_&quot;, &quot; &quot;).toLowerCase()</span>
+<span class="nc" id="L659">                .replaceFirst(&quot;^.&quot;, String.valueOf(Character.toUpperCase(role.replace(&quot;_&quot;, &quot; &quot;).toLowerCase().charAt(0))));</span>
+    }
+
+    private String safe(String value) {
+<span class="nc bnc" id="L663" title="All 2 branches missed.">        return value == null ? &quot;&quot; : value;</span>
+    }
+
+    public Parent getView() {
+<span class="nc" id="L667">        return root;</span>
+    }
+
+<span class="nc" id="L670">    private record PropertyFormData(String address, String propertyType) {</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
