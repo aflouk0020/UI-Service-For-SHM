@@ -1,4 +1,4 @@
-package sigma.smarthome.ui.view;
+package com.sigma.smarthome.ui.view;
 
 import com.sigma.smarthome.ui.view.LoginView;
 import javafx.embed.swing.JFXPanel;
