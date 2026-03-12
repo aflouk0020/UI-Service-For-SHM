@@ -13,6 +13,8 @@ import javafx.scene.control.TextField;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
@@ -496,63 +498,6 @@ class PropertyViewTest {
     }
     
     @Test
-    void propertyView_addAction_readOnlyUser_showsReadOnlyMessage() throws Exception {
-        SessionManager.startSession("token", "staff@test.com", "MAINTENANCE_STAFF");
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(List.of());
-
-        PropertyView view = new PropertyView(fakeService);
-
-        Method method = PropertyView.class.getDeclaredMethod("handleAddProperty");
-        method.setAccessible(true);
-        method.invoke(view);
-
-        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
-
-        assertEquals("Maintenance staff can view property information only.", messageLabel.getText());
-        assertTrue(messageLabel.isVisible());
-    }
-    
-    @Test
-    void propertyView_editAction_withoutSelection_showsMessage() throws Exception {
-        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(List.of());
-
-        PropertyView view = new PropertyView(fakeService);
-
-        Method method = PropertyView.class.getDeclaredMethod("handleEditProperty");
-        method.setAccessible(true);
-        method.invoke(view);
-
-        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
-
-        assertEquals("Please select a property to edit.", messageLabel.getText());
-        assertTrue(messageLabel.isVisible());
-    }
-    
-    @Test
-    void propertyView_deleteAction_withoutSelection_showsMessage() throws Exception {
-        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(List.of());
-
-        PropertyView view = new PropertyView(fakeService);
-
-        Method method = PropertyView.class.getDeclaredMethod("handleDeleteProperty");
-        method.setAccessible(true);
-        method.invoke(view);
-
-        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
-
-        assertEquals("Please select a property to delete.", messageLabel.getText());
-        assertTrue(messageLabel.isVisible());
-    }
-    
-    @Test
     void propertyView_createFormLabel_returnsStyledLabel() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
 
@@ -862,5 +807,32 @@ class PropertyViewTest {
 
         assertEquals(1, propertyTable.getItems().size());
         assertEquals("Dublin", propertyTable.getItems().get(0).getAddress());
+    }
+    @ParameterizedTest
+    @CsvSource({
+            "MAINTENANCE_STAFF,handleAddProperty,'Maintenance staff can view property information only.'",
+            "PROPERTY_MANAGER,handleEditProperty,'Please select a property to edit.'",
+            "PROPERTY_MANAGER,handleDeleteProperty,'Please select a property to delete.'"
+    })
+    void propertyView_actionWithoutRequiredState_showsExpectedMessage(
+            String role,
+            String methodName,
+            String expectedMessage
+    ) throws Exception {
+        SessionManager.startSession("token", "user@test.com", role);
+
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of());
+
+        PropertyView view = new PropertyView(fakeService);
+
+        Method method = PropertyView.class.getDeclaredMethod(methodName);
+        method.setAccessible(true);
+        method.invoke(view);
+
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+
+        assertEquals(expectedMessage, messageLabel.getText());
+        assertTrue(messageLabel.isVisible());
     }
 }
