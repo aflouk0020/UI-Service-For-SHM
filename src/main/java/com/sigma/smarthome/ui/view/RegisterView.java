@@ -26,9 +26,18 @@ public class RegisterView {
     private static final String PROMPT_TEXT = "#9ca3af";
     private static final String WHITE = "white";
 
-    private static final String FONT_WEIGHT_BOLD = "-fx-font-weight: bold;";
-    private static final String BORDER_RADIUS_10 = "-fx-border-radius: 10;";
-    private static final String BACKGROUND_RADIUS_10 = "-fx-background-radius: 10;";
+    private static final String FX_BACKGROUND_COLOR = "-fx-background-color: ";
+    private static final String FX_TEXT_FILL = "-fx-text-fill: ";
+    private static final String FX_BORDER_COLOR = "-fx-border-color: ";
+    private static final String FX_FONT_SIZE = "-fx-font-size: ";
+    private static final String FX_BORDER_WIDTH_1 = "-fx-border-width: 1;";
+    private static final String FX_BACKGROUND_RADIUS_10 = "-fx-background-radius: 10;";
+    private static final String FX_BACKGROUND_RADIUS_18 = "-fx-background-radius: 18;";
+    private static final String FX_BORDER_RADIUS_10 = "-fx-border-radius: 10;";
+    private static final String FX_BORDER_RADIUS_18 = "-fx-border-radius: 18;";
+    private static final String FX_FONT_WEIGHT_BOLD = "-fx-font-weight: bold;";
+    private static final String PX = "px;";
+    private static final String SEMICOLON = ";";
 
     private final BorderPane root = new BorderPane();
 
@@ -48,7 +57,7 @@ public class RegisterView {
 
     private void initialise() {
         configureRoot();
-        configureLabelsAndFields();
+        configureFields();
         configureButtons();
         configureMessageLabel();
         configureProgressIndicator();
@@ -56,22 +65,10 @@ public class RegisterView {
     }
 
     private void configureRoot() {
-        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #f8fafc, #eef2f7);");
+        root.setStyle(FX_BACKGROUND_COLOR + "linear-gradient(to bottom right, #f8fafc, #eef2f7);");
     }
 
-    private Label createTitleLabel() {
-        Label titleLabel = new Label("Create Your Account");
-        titleLabel.setStyle(buildTextStyle(28, true, TEXT_DARK));
-        return titleLabel;
-    }
-
-    private Label createSubtitleLabel() {
-        Label subtitleLabel = new Label("Register to access the Smart Home Maintenance Platform");
-        subtitleLabel.setStyle(buildTextStyle(14, false, TEXT_MUTED));
-        return subtitleLabel;
-    }
-
-    private void configureLabelsAndFields() {
+    private void configureFields() {
         emailField.setPromptText("Email");
         emailField.setPrefWidth(340);
         emailField.setPrefHeight(44);
@@ -112,21 +109,17 @@ public class RegisterView {
     }
 
     private void configureCard() {
-        Label titleLabel = createTitleLabel();
-        Label subtitleLabel = createSubtitleLabel();
+        Label titleLabel = new Label("Create Your Account");
+        titleLabel.setStyle(textStyle(28, true, TEXT_DARK));
+
+        Label subtitleLabel = new Label("Register to access the Smart Home Maintenance Platform");
+        subtitleLabel.setStyle(textStyle(14, false, TEXT_MUTED));
 
         VBox card = new VBox(16);
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(36));
         card.setMaxWidth(460);
-        card.setStyle(
-                "-fx-background-color: " + WHITE + ";" +
-                "-fx-background-radius: 18;" +
-                "-fx-border-color: " + CARD_BORDER + ";" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;" +
-                "-fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 18, 0.12, 0, 6);"
-        );
+        card.setStyle(cardStyle());
 
         card.getChildren().addAll(
                 titleLabel,
@@ -146,43 +139,56 @@ public class RegisterView {
     }
 
     private String commonFieldStyle() {
-        return "-fx-background-color: " + FIELD_BACKGROUND + ";" +
-               BACKGROUND_RADIUS_10 +
-               "-fx-border-color: " + BORDER_LIGHT + ";" +
-               BORDER_RADIUS_10 +
-               "-fx-border-width: 1;" +
-               "-fx-font-size: 14px;" +
-               "-fx-text-fill: " + TEXT_BODY + ";" +
-               "-fx-prompt-text-fill: " + PROMPT_TEXT + ";";
+        return baseFieldStyle(FIELD_BACKGROUND, 14, TEXT_BODY, PROMPT_TEXT);
+    }
+
+    private String baseFieldStyle(String backgroundColor, int fontSize, String textColor, String promptColor) {
+        return FX_BACKGROUND_COLOR + backgroundColor + SEMICOLON +
+               FX_BACKGROUND_RADIUS_10 +
+               FX_BORDER_COLOR + BORDER_LIGHT + SEMICOLON +
+               FX_BORDER_RADIUS_10 +
+               FX_BORDER_WIDTH_1 +
+               FX_FONT_SIZE + fontSize + PX +
+               FX_TEXT_FILL + textColor + SEMICOLON +
+               "-fx-prompt-text-fill: " + promptColor + SEMICOLON;
     }
 
     private String primaryButtonStyle() {
-        return "-fx-background-color: " + PRIMARY_BLUE + ";" +
-               BACKGROUND_RADIUS_10 +
-               "-fx-text-fill: " + WHITE + ";" +
-               "-fx-font-size: 14px;" +
-               FONT_WEIGHT_BOLD;
+        return FX_BACKGROUND_COLOR + PRIMARY_BLUE + SEMICOLON +
+               FX_BACKGROUND_RADIUS_10 +
+               FX_TEXT_FILL + WHITE + SEMICOLON +
+               FX_FONT_SIZE + "14px;" +
+               FX_FONT_WEIGHT_BOLD;
     }
 
     private String secondaryButtonStyle() {
-        return "-fx-background-color: #ffffff;" +
-               "-fx-border-color: " + BORDER_LIGHT + ";" +
-               BORDER_RADIUS_10 +
-               BACKGROUND_RADIUS_10 +
-               "-fx-text-fill: " + TEXT_DARK + ";" +
-               "-fx-font-size: 13px;" +
-               FONT_WEIGHT_BOLD;
+        return FX_BACKGROUND_COLOR + WHITE + SEMICOLON +
+               FX_BORDER_COLOR + BORDER_LIGHT + SEMICOLON +
+               FX_BORDER_RADIUS_10 +
+               FX_BACKGROUND_RADIUS_10 +
+               FX_TEXT_FILL + TEXT_DARK + SEMICOLON +
+               FX_FONT_SIZE + "13px;" +
+               FX_FONT_WEIGHT_BOLD;
     }
 
     private String messageStyle(String color) {
-        return "-fx-font-size: 12px;" +
-               "-fx-text-fill: " + color + ";";
+        return FX_FONT_SIZE + "12px;" +
+               FX_TEXT_FILL + color + SEMICOLON;
     }
 
-    private String buildTextStyle(int fontSize, boolean bold, String color) {
-        return "-fx-font-size: " + fontSize + "px;" +
-               (bold ? FONT_WEIGHT_BOLD : "") +
-               "-fx-text-fill: " + color + ";";
+    private String textStyle(int fontSize, boolean bold, String color) {
+        return FX_FONT_SIZE + fontSize + PX +
+               (bold ? FX_FONT_WEIGHT_BOLD : "") +
+               FX_TEXT_FILL + color + SEMICOLON;
+    }
+
+    private String cardStyle() {
+        return FX_BACKGROUND_COLOR + WHITE + SEMICOLON +
+               FX_BACKGROUND_RADIUS_18 +
+               FX_BORDER_COLOR + CARD_BORDER + SEMICOLON +
+               FX_BORDER_RADIUS_18 +
+               FX_BORDER_WIDTH_1 +
+               "-fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 18, 0.12, 0, 6);";
     }
 
     public Parent getView() {

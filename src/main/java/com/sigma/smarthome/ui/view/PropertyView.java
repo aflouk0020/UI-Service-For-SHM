@@ -31,6 +31,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class PropertyView {
 
@@ -59,17 +60,23 @@ public class PropertyView {
     private static final String COLOR_BORDER_LIGHT = "#d1d5db";
     private static final String COLOR_BORDER_CARD = "#e5e7eb";
     private static final String COLOR_TABLE_BORDER = "#eef2f7";
-    private static final String COLOR_BORDER_SUBTLE = "#e5e7eb";
 
-    private static final String FONT_WEIGHT_BOLD = "-fx-font-weight: bold;";
-    private static final String BACKGROUND_RADIUS_10 = "-fx-background-radius: 10;";
-    private static final String BACKGROUND_RADIUS_14 = "-fx-background-radius: 14;";
-    private static final String BACKGROUND_RADIUS_16 = "-fx-background-radius: 16;";
-    private static final String BACKGROUND_RADIUS_18 = "-fx-background-radius: 18;";
-    private static final String BORDER_RADIUS_10 = "-fx-border-radius: 10;";
-    private static final String BORDER_RADIUS_16 = "-fx-border-radius: 16;";
-    private static final String BORDER_RADIUS_18 = "-fx-border-radius: 18;";
-    private static final String CURSOR_HAND = "-fx-cursor: hand;";
+    private static final String FX_BACKGROUND_COLOR = "-fx-background-color: ";
+    private static final String FX_TEXT_FILL = "-fx-text-fill: ";
+    private static final String FX_BORDER_COLOR = "-fx-border-color: ";
+    private static final String FX_FONT_SIZE = "-fx-font-size: ";
+    private static final String FX_FONT_WEIGHT_BOLD = "-fx-font-weight: bold;";
+    private static final String FX_BACKGROUND_RADIUS_10 = "-fx-background-radius: 10;";
+    private static final String FX_BACKGROUND_RADIUS_14 = "-fx-background-radius: 14;";
+    private static final String FX_BACKGROUND_RADIUS_16 = "-fx-background-radius: 16;";
+    private static final String FX_BACKGROUND_RADIUS_18 = "-fx-background-radius: 18;";
+    private static final String FX_BORDER_RADIUS_10 = "-fx-border-radius: 10;";
+    private static final String FX_BORDER_RADIUS_16 = "-fx-border-radius: 16;";
+    private static final String FX_BORDER_RADIUS_18 = "-fx-border-radius: 18;";
+    private static final String FX_BORDER_WIDTH_1 = "-fx-border-width: 1;";
+    private static final String FX_CURSOR_HAND = "-fx-cursor: hand;";
+    private static final String PX = "px;";
+    private static final String SEMICOLON = ";";
 
     private static final String BUTTON_PADDING = "-fx-padding: 0 18 0 18;";
     private static final String DIALOG_BUTTON_PADDING = "-fx-padding: 8 20 8 20;";
@@ -134,37 +141,19 @@ public class PropertyView {
 
     private void configureRoot() {
         root.setPadding(new Insets(28));
-        root.setStyle("-fx-background-color: transparent;");
+        root.setStyle(FX_BACKGROUND_COLOR + "transparent;");
     }
 
     private void configureHeaderSection() {
         sectionBadge.setStyle(
-                "-fx-background-color: " + COLOR_BG_LIGHT_BLUE + ";" +
-                "-fx-text-fill: " + COLOR_PRIMARY_DARK + ";" +
-                "-fx-font-size: 12px;" +
-                FONT_WEIGHT_BOLD +
-                BADGE_PADDING +
-                BACKGROUND_RADIUS_14
+                badgeStyle(COLOR_BG_LIGHT_BLUE, COLOR_PRIMARY_DARK)
         );
 
-        titleLabel.setStyle(
-                "-fx-font-size: 32px;" +
-                FONT_WEIGHT_BOLD +
-                "-fx-text-fill: " + COLOR_TEXT_MAIN + ";"
-        );
-
-        subtitleLabel.setStyle(
-                "-fx-font-size: 15px;" +
-                "-fx-text-fill: " + COLOR_TEXT_MUTED + ";"
-        );
+        titleLabel.setStyle(textStyle(32, true, COLOR_TEXT_MAIN));
+        subtitleLabel.setStyle(textStyle(15, false, COLOR_TEXT_MUTED));
 
         accessNoteLabel.setStyle(
-                "-fx-font-size: 13px;" +
-                FONT_WEIGHT_BOLD +
-                "-fx-text-fill: " + COLOR_TEXT_INFO + ";" +
-                "-fx-background-color: " + COLOR_BG_WARNING + ";" +
-                WARNING_LABEL_PADDING +
-                BACKGROUND_RADIUS_10
+                warningLabelStyle(COLOR_TEXT_INFO, COLOR_BG_WARNING)
         );
 
         if (readOnlyAccess) {
@@ -213,17 +202,9 @@ public class PropertyView {
 
     private VBox createSummaryCard(String titleText, Label valueLabel) {
         Label cardTitleLabel = new Label(titleText);
-        cardTitleLabel.setStyle(
-                "-fx-font-size: 13px;" +
-                FONT_WEIGHT_BOLD +
-                "-fx-text-fill: " + COLOR_TEXT_MUTED + ";"
-        );
+        cardTitleLabel.setStyle(textStyle(13, true, COLOR_TEXT_MUTED));
 
-        valueLabel.setStyle(
-                "-fx-font-size: 22px;" +
-                FONT_WEIGHT_BOLD +
-                "-fx-text-fill: " + COLOR_TEXT_MAIN + ";"
-        );
+        valueLabel.setStyle(textStyle(22, true, COLOR_TEXT_MAIN));
 
         VBox card = new VBox(10, cardTitleLabel, valueLabel);
         card.setPadding(new Insets(18));
@@ -270,7 +251,6 @@ public class PropertyView {
     private void configureTable() {
         TableColumn<Property, String> referenceColumn = createColumn("Reference", 150, property ->
                 toReference(property.getId()));
-
         TableColumn<Property, String> idColumn = createColumn("Property ID", 255, Property::getId);
         TableColumn<Property, String> addressColumn = createColumn("Address", 260, Property::getAddress);
         TableColumn<Property, String> typeColumn = createColumn("Property Type", 170, Property::getPropertyType);
@@ -285,18 +265,16 @@ public class PropertyView {
         propertyTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         propertyTable.setFixedCellSize(42);
         propertyTable.setStyle(
-                "-fx-background-color: transparent;" +
-                "-fx-control-inner-background: " + WHITE + ";" +
-                "-fx-table-cell-border-color: " + COLOR_TABLE_BORDER + ";" +
+                FX_BACKGROUND_COLOR + "transparent;" +
+                "-fx-control-inner-background: " + WHITE + SEMICOLON +
+                "-fx-table-cell-border-color: " + COLOR_TABLE_BORDER + SEMICOLON +
                 "-fx-padding: 0;"
         );
 
         propertyTable.setRowFactory(table -> {
             TableRow<Property> row = new TableRow<>();
-
             row.itemProperty().addListener((obs, oldItem, newItem) -> applyRowStyle(row));
             row.selectedProperty().addListener((obs, wasSelected, isSelected) -> applyRowStyle(row));
-
             return row;
         });
 
@@ -308,7 +286,7 @@ public class PropertyView {
         root.getChildren().add(tableCard);
     }
 
-    private TableColumn<Property, String> createColumn(String title, double width, java.util.function.Function<Property, String> mapper) {
+    private TableColumn<Property, String> createColumn(String title, double width, Function<Property, String> mapper) {
         TableColumn<Property, String> column = new TableColumn<>(title);
         column.setCellValueFactory(data -> new ReadOnlyStringWrapper(safe(mapper.apply(data.getValue()))));
         column.setPrefWidth(width);
@@ -317,35 +295,25 @@ public class PropertyView {
     }
 
     private void applyRowStyle(TableRow<Property> row) {
-        if (row.isSelected()) {
-            row.setStyle("-fx-background-color: " + COLOR_BG_SELECTED_ROW + ";");
-        } else {
-            row.setStyle("-fx-background-color: " + WHITE + ";");
-        }
+        row.setStyle(FX_BACKGROUND_COLOR + (row.isSelected() ? COLOR_BG_SELECTED_ROW : WHITE) + SEMICOLON);
     }
 
     private Label createEmptyStateLabel() {
         Label emptyLabel = new Label("No properties match the current view.");
-        emptyLabel.setStyle(
-                "-fx-font-size: 14px;" +
-                "-fx-text-fill: " + COLOR_TEXT_MUTED + ";"
-        );
+        emptyLabel.setStyle(textStyle(14, false, COLOR_TEXT_MUTED));
         return emptyLabel;
     }
 
     private void styleTableHeader(TableColumn<Property, String> column) {
         column.setStyle(
                 "-fx-alignment: CENTER_LEFT;" +
-                "-fx-font-size: 13px;" +
-                FONT_WEIGHT_BOLD
+                textSizeStyle(13) +
+                FX_FONT_WEIGHT_BOLD
         );
     }
 
     private void configureFooter() {
-        tableFooterLabel.setStyle(
-                "-fx-font-size: 13px;" +
-                "-fx-text-fill: " + COLOR_TEXT_MUTED + ";"
-        );
+        tableFooterLabel.setStyle(textStyle(13, false, COLOR_TEXT_MUTED));
     }
 
     private void wireFiltering() {
@@ -527,18 +495,11 @@ public class PropertyView {
         dialog.getDialogPane().setPrefWidth(460);
 
         Label dialogTitle = new Label(title);
-        dialogTitle.setStyle(
-                "-fx-font-size: 24px;" +
-                FONT_WEIGHT_BOLD +
-                "-fx-text-fill: " + COLOR_TEXT_MAIN + ";"
-        );
+        dialogTitle.setStyle(textStyle(24, true, COLOR_TEXT_MAIN));
 
         Label dialogSubtitle = new Label(header);
         dialogSubtitle.setWrapText(true);
-        dialogSubtitle.setStyle(
-                "-fx-font-size: 14px;" +
-                "-fx-text-fill: " + COLOR_TEXT_MUTED + ";"
-        );
+        dialogSubtitle.setStyle(textStyle(14, false, COLOR_TEXT_MUTED));
 
         Label addressLabel = createFormLabel("Address");
         TextField addressField = createDialogField(defaultAddress, "Enter property address");
@@ -556,7 +517,7 @@ public class PropertyView {
                 typeField
         );
         content.setPadding(new Insets(24));
-        content.setStyle("-fx-background-color: " + WHITE + ";");
+        content.setStyle(FX_BACKGROUND_COLOR + WHITE + SEMICOLON);
 
         dialog.getDialogPane().setContent(content);
 
@@ -584,11 +545,7 @@ public class PropertyView {
 
     private Label createFormLabel(String text) {
         Label label = new Label(text);
-        label.setStyle(
-                "-fx-font-size: 13px;" +
-                FONT_WEIGHT_BOLD +
-                "-fx-text-fill: " + COLOR_TEXT_DARK + ";"
-        );
+        label.setStyle(textStyle(13, true, COLOR_TEXT_DARK));
         return label;
     }
 
@@ -678,119 +635,148 @@ public class PropertyView {
 
     private void stylePrimaryButton(Button button) {
         button.setPrefHeight(42);
-        button.setStyle(
-                "-fx-background-color: " + COLOR_PRIMARY + ";" +
-                "-fx-text-fill: " + WHITE + ";" +
-                "-fx-font-size: 13px;" +
-                FONT_WEIGHT_BOLD +
-                BACKGROUND_RADIUS_10 +
-                BUTTON_PADDING +
-                CURSOR_HAND
-        );
+        button.setStyle(primaryButtonStyle());
     }
 
     private void styleSecondaryButton(Button button) {
         button.setPrefHeight(42);
-        button.setStyle(
-                "-fx-background-color: " + WHITE + ";" +
-                "-fx-text-fill: " + COLOR_TEXT_MAIN + ";" +
-                "-fx-font-size: 13px;" +
-                FONT_WEIGHT_BOLD +
-                "-fx-border-color: " + COLOR_BORDER_LIGHT + ";" +
-                BORDER_RADIUS_10 +
-                BACKGROUND_RADIUS_10 +
-                BUTTON_PADDING +
-                CURSOR_HAND
-        );
+        button.setStyle(secondaryButtonStyle());
     }
 
     private void styleDangerButton(Button button) {
         button.setPrefHeight(42);
-        button.setStyle(
-                "-fx-background-color: " + COLOR_BG_DANGER + ";" +
-                "-fx-text-fill: " + WHITE + ";" +
-                "-fx-font-size: 13px;" +
-                FONT_WEIGHT_BOLD +
-                BACKGROUND_RADIUS_10 +
-                BUTTON_PADDING +
-                CURSOR_HAND
-        );
+        button.setStyle(dangerButtonStyle());
     }
 
     private String commonFieldStyle() {
-        return "-fx-background-color: " + WHITE + ";" +
-               BACKGROUND_RADIUS_10 +
-               "-fx-border-color: " + COLOR_BORDER_LIGHT + ";" +
-               BORDER_RADIUS_10 +
-               "-fx-border-width: 1;" +
-               "-fx-font-size: 13px;" +
-               "-fx-text-fill: " + COLOR_TEXT_MAIN + ";" +
-               "-fx-prompt-text-fill: " + COLOR_TEXT_PROMPT + ";";
+        return fieldStyle(WHITE, 13, COLOR_TEXT_MAIN, COLOR_TEXT_PROMPT);
     }
 
     private String dialogFieldStyle() {
-        return "-fx-background-color: " + COLOR_BG_FIELD + ";" +
-               BACKGROUND_RADIUS_10 +
-               "-fx-border-color: " + COLOR_BORDER_LIGHT + ";" +
-               BORDER_RADIUS_10 +
-               "-fx-border-width: 1;" +
-               "-fx-font-size: 13px;" +
-               "-fx-text-fill: " + COLOR_TEXT_MAIN + ";" +
-               "-fx-prompt-text-fill: " + COLOR_TEXT_PROMPT + ";";
+        return fieldStyle(COLOR_BG_FIELD, 13, COLOR_TEXT_MAIN, COLOR_TEXT_PROMPT);
+    }
+
+    private String fieldStyle(String backgroundColor, int fontSize, String textColor, String promptColor) {
+        return FX_BACKGROUND_COLOR + backgroundColor + SEMICOLON +
+               FX_BACKGROUND_RADIUS_10 +
+               FX_BORDER_COLOR + COLOR_BORDER_LIGHT + SEMICOLON +
+               FX_BORDER_RADIUS_10 +
+               FX_BORDER_WIDTH_1 +
+               textSizeStyle(fontSize) +
+               FX_TEXT_FILL + textColor + SEMICOLON +
+               "-fx-prompt-text-fill: " + promptColor + SEMICOLON;
     }
 
     private String messageStyle(String color) {
-        return "-fx-font-size: 13px;" +
-               FONT_WEIGHT_BOLD +
-               "-fx-text-fill: " + color + ";";
+        return textSizeStyle(13) + FX_FONT_WEIGHT_BOLD + FX_TEXT_FILL + color + SEMICOLON;
+    }
+
+    private String textStyle(int fontSize, boolean bold, String color) {
+        return textSizeStyle(fontSize) +
+               (bold ? FX_FONT_WEIGHT_BOLD : EMPTY_VALUE) +
+               FX_TEXT_FILL + color + SEMICOLON;
+    }
+
+    private String textSizeStyle(int fontSize) {
+        return FX_FONT_SIZE + fontSize + PX;
+    }
+
+    private String badgeStyle(String backgroundColor, String textColor) {
+        return FX_BACKGROUND_COLOR + backgroundColor + SEMICOLON +
+               FX_TEXT_FILL + textColor + SEMICOLON +
+               textSizeStyle(12) +
+               FX_FONT_WEIGHT_BOLD +
+               BADGE_PADDING +
+               FX_BACKGROUND_RADIUS_14;
+    }
+
+    private String warningLabelStyle(String textColor, String backgroundColor) {
+        return textSizeStyle(13) +
+               FX_FONT_WEIGHT_BOLD +
+               FX_TEXT_FILL + textColor + SEMICOLON +
+               FX_BACKGROUND_COLOR + backgroundColor + SEMICOLON +
+               WARNING_LABEL_PADDING +
+               FX_BACKGROUND_RADIUS_10;
     }
 
     private String cardStyle() {
-        return "-fx-background-color: " + WHITE + ";" +
-               BACKGROUND_RADIUS_16 +
-               "-fx-border-color: " + COLOR_BORDER_CARD + ";" +
-               BORDER_RADIUS_16 +
-               "-fx-border-width: 1;" +
+        return FX_BACKGROUND_COLOR + WHITE + SEMICOLON +
+               FX_BACKGROUND_RADIUS_16 +
+               FX_BORDER_COLOR + COLOR_BORDER_CARD + SEMICOLON +
+               FX_BORDER_RADIUS_16 +
+               FX_BORDER_WIDTH_1 +
                "-fx-effect: dropshadow(gaussian, rgba(15,23,42,0.05), 14, 0.10, 0, 4);";
     }
 
     private String tableCardStyle() {
-        return "-fx-background-color: " + WHITE + ";" +
-               BACKGROUND_RADIUS_18 +
-               "-fx-border-color: " + COLOR_BORDER_CARD + ";" +
-               BORDER_RADIUS_18 +
-               "-fx-border-width: 1;" +
+        return FX_BACKGROUND_COLOR + WHITE + SEMICOLON +
+               FX_BACKGROUND_RADIUS_18 +
+               FX_BORDER_COLOR + COLOR_BORDER_CARD + SEMICOLON +
+               FX_BORDER_RADIUS_18 +
+               FX_BORDER_WIDTH_1 +
                "-fx-effect: dropshadow(gaussian, rgba(15,23,42,0.05), 16, 0.10, 0, 6);";
     }
 
     private String dialogPaneStyle() {
-        return "-fx-background-color: " + WHITE + ";" +
-               BACKGROUND_RADIUS_18 +
-               "-fx-border-color: " + COLOR_BORDER_SUBTLE + ";" +
-               BORDER_RADIUS_18 +
-               "-fx-border-width: 1;";
+        return FX_BACKGROUND_COLOR + WHITE + SEMICOLON +
+               FX_BACKGROUND_RADIUS_18 +
+               FX_BORDER_COLOR + COLOR_BORDER_CARD + SEMICOLON +
+               FX_BORDER_RADIUS_18 +
+               FX_BORDER_WIDTH_1;
+    }
+
+    private String primaryButtonStyle() {
+        return FX_BACKGROUND_COLOR + COLOR_PRIMARY + SEMICOLON +
+               FX_TEXT_FILL + WHITE + SEMICOLON +
+               textSizeStyle(13) +
+               FX_FONT_WEIGHT_BOLD +
+               FX_BACKGROUND_RADIUS_10 +
+               BUTTON_PADDING +
+               FX_CURSOR_HAND;
+    }
+
+    private String secondaryButtonStyle() {
+        return FX_BACKGROUND_COLOR + WHITE + SEMICOLON +
+               FX_TEXT_FILL + COLOR_TEXT_MAIN + SEMICOLON +
+               textSizeStyle(13) +
+               FX_FONT_WEIGHT_BOLD +
+               FX_BORDER_COLOR + COLOR_BORDER_LIGHT + SEMICOLON +
+               FX_BORDER_RADIUS_10 +
+               FX_BACKGROUND_RADIUS_10 +
+               BUTTON_PADDING +
+               FX_CURSOR_HAND;
+    }
+
+    private String dangerButtonStyle() {
+        return FX_BACKGROUND_COLOR + COLOR_BG_DANGER + SEMICOLON +
+               FX_TEXT_FILL + WHITE + SEMICOLON +
+               textSizeStyle(13) +
+               FX_FONT_WEIGHT_BOLD +
+               FX_BACKGROUND_RADIUS_10 +
+               BUTTON_PADDING +
+               FX_CURSOR_HAND;
     }
 
     private String dialogPrimaryButtonStyle() {
-        return "-fx-background-color: " + COLOR_PRIMARY + ";" +
-               "-fx-text-fill: " + WHITE + ";" +
-               "-fx-font-size: 13px;" +
-               FONT_WEIGHT_BOLD +
-               BACKGROUND_RADIUS_10 +
+        return FX_BACKGROUND_COLOR + COLOR_PRIMARY + SEMICOLON +
+               FX_TEXT_FILL + WHITE + SEMICOLON +
+               textSizeStyle(13) +
+               FX_FONT_WEIGHT_BOLD +
+               FX_BACKGROUND_RADIUS_10 +
                DIALOG_BUTTON_PADDING +
-               CURSOR_HAND;
+               FX_CURSOR_HAND;
     }
 
     private String dialogSecondaryButtonStyle() {
-        return "-fx-background-color: " + WHITE + ";" +
-               "-fx-text-fill: " + COLOR_TEXT_MAIN + ";" +
-               "-fx-font-size: 13px;" +
-               FONT_WEIGHT_BOLD +
-               "-fx-border-color: " + COLOR_BORDER_LIGHT + ";" +
-               BORDER_RADIUS_10 +
-               BACKGROUND_RADIUS_10 +
+        return FX_BACKGROUND_COLOR + WHITE + SEMICOLON +
+               FX_TEXT_FILL + COLOR_TEXT_MAIN + SEMICOLON +
+               textSizeStyle(13) +
+               FX_FONT_WEIGHT_BOLD +
+               FX_BORDER_COLOR + COLOR_BORDER_LIGHT + SEMICOLON +
+               FX_BORDER_RADIUS_10 +
+               FX_BACKGROUND_RADIUS_10 +
                DIALOG_BUTTON_PADDING +
-               CURSOR_HAND;
+               FX_CURSOR_HAND;
     }
 
     private String formatRole(String role) {
@@ -813,3 +799,4 @@ public class PropertyView {
     private record PropertyFormData(String address, String propertyType) {
     }
 }
+ 
