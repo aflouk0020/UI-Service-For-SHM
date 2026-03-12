@@ -29,12 +29,53 @@ import javafx.scene.layout.VBox;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
-
 
 public class PropertyView {
 
-	private static final String READ_ONLY_MESSAGE = "Maintenance staff can view property information only.";
+    private static final String READ_ONLY_MESSAGE = "Maintenance staff can view property information only.";
+    private static final String NO_PROPERTIES_TEXT = "No properties";
+    private static final String EMPTY_VALUE = "";
+    private static final String DASH = "-";
+    private static final String WHITE = "white";
+
+    private static final String COLOR_PRIMARY = "#2563eb";
+    private static final String COLOR_PRIMARY_DARK = "#1d4ed8";
+    private static final String COLOR_TEXT_MAIN = "#111827";
+    private static final String COLOR_TEXT_DARK = "#374151";
+    private static final String COLOR_TEXT_MUTED = "#6b7280";
+    private static final String COLOR_TEXT_INFO = "#92400e";
+    private static final String COLOR_TEXT_SUCCESS = "#16a34a";
+    private static final String COLOR_TEXT_ERROR = "#dc2626";
+    private static final String COLOR_TEXT_PROMPT = "#9ca3af";
+
+    private static final String COLOR_BG_LIGHT_BLUE = "#dbeafe";
+    private static final String COLOR_BG_WARNING = "#fef3c7";
+    private static final String COLOR_BG_FIELD = "#f9fafb";
+    private static final String COLOR_BG_DANGER = "#ef4444";
+    private static final String COLOR_BG_SELECTED_ROW = "#eff6ff";
+
+    private static final String COLOR_BORDER_LIGHT = "#d1d5db";
+    private static final String COLOR_BORDER_CARD = "#e5e7eb";
+    private static final String COLOR_TABLE_BORDER = "#eef2f7";
+    private static final String COLOR_BORDER_SUBTLE = "#e5e7eb";
+
+    private static final String FONT_WEIGHT_BOLD = "-fx-font-weight: bold;";
+    private static final String BACKGROUND_RADIUS_10 = "-fx-background-radius: 10;";
+    private static final String BACKGROUND_RADIUS_14 = "-fx-background-radius: 14;";
+    private static final String BACKGROUND_RADIUS_16 = "-fx-background-radius: 16;";
+    private static final String BACKGROUND_RADIUS_18 = "-fx-background-radius: 18;";
+    private static final String BORDER_RADIUS_10 = "-fx-border-radius: 10;";
+    private static final String BORDER_RADIUS_16 = "-fx-border-radius: 16;";
+    private static final String BORDER_RADIUS_18 = "-fx-border-radius: 18;";
+    private static final String CURSOR_HAND = "-fx-cursor: hand;";
+
+    private static final String BUTTON_PADDING = "-fx-padding: 0 18 0 18;";
+    private static final String DIALOG_BUTTON_PADDING = "-fx-padding: 8 20 8 20;";
+    private static final String WARNING_LABEL_PADDING = "-fx-padding: 8 12 8 12;";
+    private static final String BADGE_PADDING = "-fx-padding: 6 12 6 12;";
+
     private final VBox root = new VBox(22);
 
     private final Label sectionBadge = new Label("Property Service");
@@ -55,17 +96,16 @@ public class PropertyView {
 
     private final Label totalPropertiesValue = new Label("0");
     private final Label uniqueTypesValue = new Label("0");
-    private final Label latestPropertyValue = new Label("No properties");
-    private final Label activeRoleValue = new Label("-");
+    private final Label latestPropertyValue = new Label(NO_PROPERTIES_TEXT);
+    private final Label activeRoleValue = new Label(DASH);
     private final Label tableFooterLabel = new Label("Showing 0 properties");
 
     private final TableView<Property> propertyTable = new TableView<>();
     private final ObservableList<Property> propertyData = FXCollections.observableArrayList();
-    private final FilteredList<Property> filteredProperties = new FilteredList<>(propertyData, p -> true);
+    private final FilteredList<Property> filteredProperties = new FilteredList<>(propertyData, property -> true);
     private final SortedList<Property> sortedProperties = new SortedList<>(filteredProperties);
 
     private final PropertyApiService propertyApiService;
-
     private final boolean readOnlyAccess;
 
     public PropertyView() {
@@ -99,32 +139,32 @@ public class PropertyView {
 
     private void configureHeaderSection() {
         sectionBadge.setStyle(
-                "-fx-background-color: #dbeafe;" +
-                "-fx-text-fill: #1d4ed8;" +
+                "-fx-background-color: " + COLOR_BG_LIGHT_BLUE + ";" +
+                "-fx-text-fill: " + COLOR_PRIMARY_DARK + ";" +
                 "-fx-font-size: 12px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-padding: 6 12 6 12;" +
-                "-fx-background-radius: 14;"
+                FONT_WEIGHT_BOLD +
+                BADGE_PADDING +
+                BACKGROUND_RADIUS_14
         );
 
         titleLabel.setStyle(
                 "-fx-font-size: 32px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-text-fill: #111827;"
+                FONT_WEIGHT_BOLD +
+                "-fx-text-fill: " + COLOR_TEXT_MAIN + ";"
         );
 
         subtitleLabel.setStyle(
                 "-fx-font-size: 15px;" +
-                "-fx-text-fill: #6b7280;"
+                "-fx-text-fill: " + COLOR_TEXT_MUTED + ";"
         );
 
         accessNoteLabel.setStyle(
                 "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-text-fill: #92400e;" +
-                "-fx-background-color: #fef3c7;" +
-                "-fx-padding: 8 12 8 12;" +
-                "-fx-background-radius: 10;"
+                FONT_WEIGHT_BOLD +
+                "-fx-text-fill: " + COLOR_TEXT_INFO + ";" +
+                "-fx-background-color: " + COLOR_BG_WARNING + ";" +
+                WARNING_LABEL_PADDING +
+                BACKGROUND_RADIUS_10
         );
 
         if (readOnlyAccess) {
@@ -138,7 +178,6 @@ public class PropertyView {
 
         VBox headerBox = new VBox(10, sectionBadge, titleLabel, subtitleLabel, accessNoteLabel);
         headerBox.setAlignment(Pos.TOP_LEFT);
-
         root.getChildren().add(headerBox);
     }
 
@@ -148,28 +187,27 @@ public class PropertyView {
         styleSecondaryButton(editButton);
         styleDangerButton(deleteButton);
 
-        refreshButton.setOnAction(e -> loadProperties());
-        addButton.setOnAction(e -> handleAddProperty());
-        editButton.setOnAction(e -> handleEditProperty());
-        deleteButton.setOnAction(e -> handleDeleteProperty());
+        refreshButton.setOnAction(event -> loadProperties());
+        addButton.setOnAction(event -> handleAddProperty());
+        editButton.setOnAction(event -> handleEditProperty());
+        deleteButton.setOnAction(event -> handleDeleteProperty());
 
         HBox buttonBar = new HBox(12, refreshButton, addButton, editButton, deleteButton);
         buttonBar.setAlignment(Pos.CENTER_LEFT);
-
         root.getChildren().add(buttonBar);
     }
 
     private void configureSummaryCards() {
         activeRoleValue.setText(formatRole(SessionManager.getRole()));
 
-        HBox cardsRow = new HBox(16,
+        HBox cardsRow = new HBox(
+                16,
                 createSummaryCard("Total Properties", totalPropertiesValue),
                 createSummaryCard("Property Types", uniqueTypesValue),
                 createSummaryCard("Latest Property", latestPropertyValue),
                 createSummaryCard("Active Role", activeRoleValue)
         );
         cardsRow.setAlignment(Pos.CENTER_LEFT);
-
         root.getChildren().add(cardsRow);
     }
 
@@ -177,14 +215,14 @@ public class PropertyView {
         Label cardTitleLabel = new Label(titleText);
         cardTitleLabel.setStyle(
                 "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-text-fill: #6b7280;"
+                FONT_WEIGHT_BOLD +
+                "-fx-text-fill: " + COLOR_TEXT_MUTED + ";"
         );
 
         valueLabel.setStyle(
                 "-fx-font-size: 22px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-text-fill: #111827;"
+                FONT_WEIGHT_BOLD +
+                "-fx-text-fill: " + COLOR_TEXT_MAIN + ";"
         );
 
         VBox card = new VBox(10, cardTitleLabel, valueLabel);
@@ -192,14 +230,7 @@ public class PropertyView {
         card.setPrefWidth(220);
         card.setMinHeight(96);
         card.setAlignment(Pos.CENTER_LEFT);
-        card.setStyle(
-                "-fx-background-color: white;" +
-                "-fx-background-radius: 16;" +
-                "-fx-border-color: #e5e7eb;" +
-                "-fx-border-radius: 16;" +
-                "-fx-border-width: 1;" +
-                "-fx-effect: dropshadow(gaussian, rgba(15,23,42,0.05), 14, 0.10, 0, 4);"
-        );
+        card.setStyle(cardStyle());
         return card;
     }
 
@@ -215,7 +246,7 @@ public class PropertyView {
         propertyTypeFilter.setStyle(commonFieldStyle());
 
         styleSecondaryButton(clearFiltersButton);
-        clearFiltersButton.setOnAction(e -> {
+        clearFiltersButton.setOnAction(event -> {
             searchField.clear();
             propertyTypeFilter.getSelectionModel().clearSelection();
             applyFilters();
@@ -226,50 +257,24 @@ public class PropertyView {
 
         HBox filterBar = new HBox(12, searchField, propertyTypeFilter, clearFiltersButton, spacer);
         filterBar.setAlignment(Pos.CENTER_LEFT);
-
         root.getChildren().add(filterBar);
     }
 
     private void configureMessageLabel() {
-        messageLabel.setStyle(
-                "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-text-fill: #dc2626;"
-        );
+        messageLabel.setStyle(messageStyle(COLOR_TEXT_ERROR));
         messageLabel.setVisible(false);
         messageLabel.setManaged(false);
     }
 
+    @SuppressWarnings("unchecked")
     private void configureTable() {
-        TableColumn<Property, String> referenceColumn = new TableColumn<>("Reference");
-        referenceColumn.setCellValueFactory(data ->
-                new ReadOnlyStringWrapper(toReference(data.getValue().getId()))
-        );
-        referenceColumn.setPrefWidth(150);
+        TableColumn<Property, String> referenceColumn = createColumn("Reference", 150, property ->
+                toReference(property.getId()));
 
-        TableColumn<Property, String> idColumn = new TableColumn<>("Property ID");
-        idColumn.setCellValueFactory(data ->
-                new ReadOnlyStringWrapper(safe(data.getValue().getId()))
-        );
-        idColumn.setPrefWidth(255);
-
-        TableColumn<Property, String> addressColumn = new TableColumn<>("Address");
-        addressColumn.setCellValueFactory(data ->
-                new ReadOnlyStringWrapper(safe(data.getValue().getAddress()))
-        );
-        addressColumn.setPrefWidth(260);
-
-        TableColumn<Property, String> typeColumn = new TableColumn<>("Property Type");
-        typeColumn.setCellValueFactory(data ->
-                new ReadOnlyStringWrapper(safe(data.getValue().getPropertyType()))
-        );
-        typeColumn.setPrefWidth(170);
-
-        TableColumn<Property, String> managerColumn = new TableColumn<>("Manager ID");
-        managerColumn.setCellValueFactory(data ->
-                new ReadOnlyStringWrapper(safe(data.getValue().getManagerId()))
-        );
-        managerColumn.setPrefWidth(255);
+        TableColumn<Property, String> idColumn = createColumn("Property ID", 255, Property::getId);
+        TableColumn<Property, String> addressColumn = createColumn("Address", 260, Property::getAddress);
+        TableColumn<Property, String> typeColumn = createColumn("Property Type", 170, Property::getPropertyType);
+        TableColumn<Property, String> managerColumn = createColumn("Manager ID", 255, Property::getManagerId);
 
         propertyTable.getColumns().addAll(referenceColumn, idColumn, addressColumn, typeColumn, managerColumn);
         propertyTable.setItems(sortedProperties);
@@ -281,55 +286,49 @@ public class PropertyView {
         propertyTable.setFixedCellSize(42);
         propertyTable.setStyle(
                 "-fx-background-color: transparent;" +
-                "-fx-control-inner-background: white;" +
-                "-fx-table-cell-border-color: #eef2f7;" +
+                "-fx-control-inner-background: " + WHITE + ";" +
+                "-fx-table-cell-border-color: " + COLOR_TABLE_BORDER + ";" +
                 "-fx-padding: 0;"
         );
 
-        styleTableHeader(referenceColumn);
-        styleTableHeader(idColumn);
-        styleTableHeader(addressColumn);
-        styleTableHeader(typeColumn);
-        styleTableHeader(managerColumn);
-
-        propertyTable.setRowFactory(tv -> {
+        propertyTable.setRowFactory(table -> {
             TableRow<Property> row = new TableRow<>();
 
-            row.itemProperty().addListener((obs, oldItem, newItem) ->
-                    row.setStyle("-fx-background-color: white;")
-            );
-
-            row.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
-                if (isSelected) {
-                    row.setStyle("-fx-background-color: #eff6ff;");
-                } else {
-                    row.setStyle("-fx-background-color: white;");
-                }
-            });
+            row.itemProperty().addListener((obs, oldItem, newItem) -> applyRowStyle(row));
+            row.selectedProperty().addListener((obs, wasSelected, isSelected) -> applyRowStyle(row));
 
             return row;
         });
 
         VBox tableCard = new VBox(16, messageLabel, propertyTable, tableFooterLabel);
         tableCard.setPadding(new Insets(22));
-        tableCard.setStyle(
-                "-fx-background-color: white;" +
-                "-fx-background-radius: 18;" +
-                "-fx-border-color: #e5e7eb;" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;" +
-                "-fx-effect: dropshadow(gaussian, rgba(15,23,42,0.05), 16, 0.10, 0, 6);"
-        );
+        tableCard.setStyle(tableCardStyle());
 
         VBox.setVgrow(propertyTable, Priority.ALWAYS);
         root.getChildren().add(tableCard);
+    }
+
+    private TableColumn<Property, String> createColumn(String title, double width, java.util.function.Function<Property, String> mapper) {
+        TableColumn<Property, String> column = new TableColumn<>(title);
+        column.setCellValueFactory(data -> new ReadOnlyStringWrapper(safe(mapper.apply(data.getValue()))));
+        column.setPrefWidth(width);
+        styleTableHeader(column);
+        return column;
+    }
+
+    private void applyRowStyle(TableRow<Property> row) {
+        if (row.isSelected()) {
+            row.setStyle("-fx-background-color: " + COLOR_BG_SELECTED_ROW + ";");
+        } else {
+            row.setStyle("-fx-background-color: " + WHITE + ";");
+        }
     }
 
     private Label createEmptyStateLabel() {
         Label emptyLabel = new Label("No properties match the current view.");
         emptyLabel.setStyle(
                 "-fx-font-size: 14px;" +
-                "-fx-text-fill: #6b7280;"
+                "-fx-text-fill: " + COLOR_TEXT_MUTED + ";"
         );
         return emptyLabel;
     }
@@ -338,14 +337,14 @@ public class PropertyView {
         column.setStyle(
                 "-fx-alignment: CENTER_LEFT;" +
                 "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;"
+                FONT_WEIGHT_BOLD
         );
     }
 
     private void configureFooter() {
         tableFooterLabel.setStyle(
                 "-fx-font-size: 13px;" +
-                "-fx-text-fill: #6b7280;"
+                "-fx-text-fill: " + COLOR_TEXT_MUTED + ";"
         );
     }
 
@@ -368,19 +367,18 @@ public class PropertyView {
 
     private void applyFilters() {
         String searchText = searchField.getText() == null
-                ? ""
-                : searchField.getText().trim().toLowerCase(java.util.Locale.ROOT);
+                ? EMPTY_VALUE
+                : searchField.getText().trim().toLowerCase(Locale.ROOT);
 
         String selectedType = propertyTypeFilter.getValue();
 
         filteredProperties.setPredicate(property -> {
-
             boolean matchesSearch = searchText.isBlank()
-                    || safe(property.getAddress()).toLowerCase(java.util.Locale.ROOT).contains(searchText)
-                    || safe(property.getId()).toLowerCase(java.util.Locale.ROOT).contains(searchText)
-                    || safe(property.getManagerId()).toLowerCase(java.util.Locale.ROOT).contains(searchText)
-                    || safe(property.getPropertyType()).toLowerCase(java.util.Locale.ROOT).contains(searchText)
-                    || toReference(property.getId()).toLowerCase(java.util.Locale.ROOT).contains(searchText);
+                    || containsIgnoreCase(property.getAddress(), searchText)
+                    || containsIgnoreCase(property.getId(), searchText)
+                    || containsIgnoreCase(property.getManagerId(), searchText)
+                    || containsIgnoreCase(property.getPropertyType(), searchText)
+                    || containsIgnoreCase(toReference(property.getId()), searchText);
 
             boolean matchesType = selectedType == null
                     || selectedType.isBlank()
@@ -391,6 +389,10 @@ public class PropertyView {
 
         updateSummaryCards();
         updateFooter();
+    }
+
+    private boolean containsIgnoreCase(String value, String searchText) {
+        return safe(value).toLowerCase(Locale.ROOT).contains(searchText);
     }
 
     private void loadProperties() {
@@ -440,7 +442,6 @@ public class PropertyView {
             loadProperties();
             showMessage("Property created successfully.", false);
         } catch (PropertyApiService.PropertyApiException ex) {
-            ex.printStackTrace();
             showMessage("Failed to create property.", true);
         }
     }
@@ -452,7 +453,6 @@ public class PropertyView {
         }
 
         Property selected = propertyTable.getSelectionModel().getSelectedItem();
-
         if (selected == null) {
             showMessage("Please select a property to edit.", true);
             return;
@@ -471,16 +471,11 @@ public class PropertyView {
             }
 
             PropertyFormData formData = result.get();
-            propertyApiService.updateProperty(
-                    selected.getId(),
-                    formData.address(),
-                    formData.propertyType()
-            );
+            propertyApiService.updateProperty(selected.getId(), formData.address(), formData.propertyType());
 
             loadProperties();
             showMessage("Property updated successfully.", false);
         } catch (PropertyApiService.PropertyApiException ex) {
-            ex.printStackTrace();
             showMessage("Failed to update property.", true);
         }
     }
@@ -492,7 +487,6 @@ public class PropertyView {
         }
 
         Property selected = propertyTable.getSelectionModel().getSelectedItem();
-
         if (selected == null) {
             showMessage("Please select a property to delete.", true);
             return;
@@ -501,11 +495,7 @@ public class PropertyView {
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
         confirmAlert.setTitle("Delete Property");
         confirmAlert.setHeaderText("Confirm property deletion");
-        confirmAlert.setContentText(
-                "Are you sure you want to delete property "
-                        + toReference(selected.getId())
-                        + "?"
-        );
+        confirmAlert.setContentText("Are you sure you want to delete property " + toReference(selected.getId()) + "?");
 
         Optional<ButtonType> result = confirmAlert.showAndWait();
         if (result.isEmpty() || result.get() != ButtonType.OK) {
@@ -517,10 +507,10 @@ public class PropertyView {
             loadProperties();
             showMessage("Property deleted successfully.", false);
         } catch (PropertyApiService.PropertyApiException ex) {
-            ex.printStackTrace();
             showMessage("Failed to delete property.", true);
         }
     }
+
     private Optional<PropertyFormData> showPropertyFormDialog(
             String title,
             String header,
@@ -533,73 +523,31 @@ public class PropertyView {
 
         ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
-
-        dialog.getDialogPane().setStyle(
-                "-fx-background-color: white;" +
-                "-fx-background-radius: 18;" +
-                "-fx-border-color: #e5e7eb;" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;"
-        );
+        dialog.getDialogPane().setStyle(dialogPaneStyle());
         dialog.getDialogPane().setPrefWidth(460);
 
         Label dialogTitle = new Label(title);
         dialogTitle.setStyle(
                 "-fx-font-size: 24px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-text-fill: #111827;"
+                FONT_WEIGHT_BOLD +
+                "-fx-text-fill: " + COLOR_TEXT_MAIN + ";"
         );
 
         Label dialogSubtitle = new Label(header);
         dialogSubtitle.setWrapText(true);
         dialogSubtitle.setStyle(
                 "-fx-font-size: 14px;" +
-                "-fx-text-fill: #6b7280;"
+                "-fx-text-fill: " + COLOR_TEXT_MUTED + ";"
         );
 
-        Label addressLabel = new Label("Address");
-        addressLabel.setStyle(
-                "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-text-fill: #374151;"
-        );
+        Label addressLabel = createFormLabel("Address");
+        TextField addressField = createDialogField(defaultAddress, "Enter property address");
 
-        TextField addressField = new TextField(defaultAddress == null ? "" : defaultAddress);
-        addressField.setPromptText("Enter property address");
-        addressField.setPrefHeight(42);
-        addressField.setStyle(
-                "-fx-background-color: #f9fafb;" +
-                "-fx-background-radius: 10;" +
-                "-fx-border-color: #d1d5db;" +
-                "-fx-border-radius: 10;" +
-                "-fx-border-width: 1;" +
-                "-fx-font-size: 13px;" +
-                "-fx-text-fill: #111827;" +
-                "-fx-prompt-text-fill: #9ca3af;"
-        );
+        Label typeLabel = createFormLabel("Property Type");
+        TextField typeField = createDialogField(defaultPropertyType, "Enter property type");
 
-        Label typeLabel = new Label("Property Type");
-        typeLabel.setStyle(
-                "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-text-fill: #374151;"
-        );
-
-        TextField typeField = new TextField(defaultPropertyType == null ? "" : defaultPropertyType);
-        typeField.setPromptText("Enter property type");
-        typeField.setPrefHeight(42);
-        typeField.setStyle(
-                "-fx-background-color: #f9fafb;" +
-                "-fx-background-radius: 10;" +
-                "-fx-border-color: #d1d5db;" +
-                "-fx-border-radius: 10;" +
-                "-fx-border-width: 1;" +
-                "-fx-font-size: 13px;" +
-                "-fx-text-fill: #111827;" +
-                "-fx-prompt-text-fill: #9ca3af;"
-        );
-
-        VBox content = new VBox(14,
+        VBox content = new VBox(
+                14,
                 dialogTitle,
                 dialogSubtitle,
                 addressLabel,
@@ -608,42 +556,23 @@ public class PropertyView {
                 typeField
         );
         content.setPadding(new Insets(24));
-        content.setStyle("-fx-background-color: white;");
+        content.setStyle("-fx-background-color: " + WHITE + ";");
 
         dialog.getDialogPane().setContent(content);
 
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
         Button cancelButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
 
-        saveButton.setStyle(
-                "-fx-background-color: #2563eb;" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-background-radius: 10;" +
-                "-fx-padding: 8 20 8 20;" +
-                "-fx-cursor: hand;"
-        );
-
-        cancelButton.setStyle(
-                "-fx-background-color: white;" +
-                "-fx-text-fill: #111827;" +
-                "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-border-color: #d1d5db;" +
-                "-fx-border-radius: 10;" +
-                "-fx-background-radius: 10;" +
-                "-fx-padding: 8 20 8 20;" +
-                "-fx-cursor: hand;"
-        );
+        saveButton.setStyle(dialogPrimaryButtonStyle());
+        cancelButton.setStyle(dialogSecondaryButtonStyle());
 
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isEmpty() || result.get() != saveButtonType) {
             return Optional.empty();
         }
 
-        String address = addressField.getText() == null ? "" : addressField.getText().trim();
-        String propertyType = typeField.getText() == null ? "" : typeField.getText().trim();
+        String address = addressField.getText() == null ? EMPTY_VALUE : addressField.getText().trim();
+        String propertyType = typeField.getText() == null ? EMPTY_VALUE : typeField.getText().trim();
 
         if (address.isBlank() || propertyType.isBlank()) {
             showMessage("Address and property type are required.", true);
@@ -651,6 +580,24 @@ public class PropertyView {
         }
 
         return Optional.of(new PropertyFormData(address, propertyType));
+    }
+
+    private Label createFormLabel(String text) {
+        Label label = new Label(text);
+        label.setStyle(
+                "-fx-font-size: 13px;" +
+                FONT_WEIGHT_BOLD +
+                "-fx-text-fill: " + COLOR_TEXT_DARK + ";"
+        );
+        return label;
+    }
+
+    private TextField createDialogField(String defaultValue, String promptText) {
+        TextField field = new TextField(defaultValue == null ? EMPTY_VALUE : defaultValue);
+        field.setPromptText(promptText);
+        field.setPrefHeight(42);
+        field.setStyle(dialogFieldStyle());
+        return field;
     }
 
     private void refreshFilterOptions() {
@@ -679,7 +626,7 @@ public class PropertyView {
                 .map(Property::getPropertyType)
                 .filter(type -> type != null && !type.isBlank())
                 .map(String::trim)
-                .map(String::toLowerCase)
+                .map(type -> type.toLowerCase(Locale.ROOT))
                 .distinct()
                 .count();
 
@@ -692,7 +639,7 @@ public class PropertyView {
         latestPropertyValue.setText(
                 latest.map(property -> safe(property.getAddress()))
                         .filter(address -> !address.isBlank())
-                        .orElse("No properties")
+                        .orElse(NO_PROPERTIES_TEXT)
         );
         activeRoleValue.setText(formatRole(SessionManager.getRole()));
     }
@@ -709,26 +656,22 @@ public class PropertyView {
 
     private String toReference(String propertyId) {
         if (propertyId == null || propertyId.isBlank()) {
-            return "-";
+            return DASH;
         }
 
         String shortened = propertyId.length() >= 8 ? propertyId.substring(0, 8) : propertyId;
-        return "PROP-" + shortened.toUpperCase();
+        return "PROP-" + shortened.toUpperCase(Locale.ROOT);
     }
 
     private void showMessage(String message, boolean isError) {
         messageLabel.setText(message);
-        messageLabel.setStyle(
-                "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-text-fill: " + (isError ? "#dc2626;" : "#16a34a;")
-        );
+        messageLabel.setStyle(messageStyle(isError ? COLOR_TEXT_ERROR : COLOR_TEXT_SUCCESS));
         messageLabel.setVisible(true);
         messageLabel.setManaged(true);
     }
 
     private void hideMessage() {
-        messageLabel.setText("");
+        messageLabel.setText(EMPTY_VALUE);
         messageLabel.setVisible(false);
         messageLabel.setManaged(false);
     }
@@ -736,66 +679,131 @@ public class PropertyView {
     private void stylePrimaryButton(Button button) {
         button.setPrefHeight(42);
         button.setStyle(
-                "-fx-background-color: #2563eb;" +
-                "-fx-text-fill: white;" +
+                "-fx-background-color: " + COLOR_PRIMARY + ";" +
+                "-fx-text-fill: " + WHITE + ";" +
                 "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-background-radius: 10;" +
-                "-fx-padding: 0 18 0 18;" +
-                "-fx-cursor: hand;"
+                FONT_WEIGHT_BOLD +
+                BACKGROUND_RADIUS_10 +
+                BUTTON_PADDING +
+                CURSOR_HAND
         );
     }
 
     private void styleSecondaryButton(Button button) {
         button.setPrefHeight(42);
         button.setStyle(
-                "-fx-background-color: white;" +
-                "-fx-text-fill: #111827;" +
+                "-fx-background-color: " + WHITE + ";" +
+                "-fx-text-fill: " + COLOR_TEXT_MAIN + ";" +
                 "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-border-color: #d1d5db;" +
-                "-fx-border-radius: 10;" +
-                "-fx-background-radius: 10;" +
-                "-fx-padding: 0 18 0 18;" +
-                "-fx-cursor: hand;"
+                FONT_WEIGHT_BOLD +
+                "-fx-border-color: " + COLOR_BORDER_LIGHT + ";" +
+                BORDER_RADIUS_10 +
+                BACKGROUND_RADIUS_10 +
+                BUTTON_PADDING +
+                CURSOR_HAND
         );
     }
 
     private void styleDangerButton(Button button) {
         button.setPrefHeight(42);
         button.setStyle(
-                "-fx-background-color: #ef4444;" +
-                "-fx-text-fill: white;" +
+                "-fx-background-color: " + COLOR_BG_DANGER + ";" +
+                "-fx-text-fill: " + WHITE + ";" +
                 "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-background-radius: 10;" +
-                "-fx-padding: 0 18 0 18;" +
-                "-fx-cursor: hand;"
+                FONT_WEIGHT_BOLD +
+                BACKGROUND_RADIUS_10 +
+                BUTTON_PADDING +
+                CURSOR_HAND
         );
     }
 
     private String commonFieldStyle() {
-        return "-fx-background-color: white;" +
-               "-fx-background-radius: 10;" +
-               "-fx-border-color: #d1d5db;" +
-               "-fx-border-radius: 10;" +
+        return "-fx-background-color: " + WHITE + ";" +
+               BACKGROUND_RADIUS_10 +
+               "-fx-border-color: " + COLOR_BORDER_LIGHT + ";" +
+               BORDER_RADIUS_10 +
                "-fx-border-width: 1;" +
                "-fx-font-size: 13px;" +
-               "-fx-text-fill: #111827;" +
-               "-fx-prompt-text-fill: #9ca3af;";
+               "-fx-text-fill: " + COLOR_TEXT_MAIN + ";" +
+               "-fx-prompt-text-fill: " + COLOR_TEXT_PROMPT + ";";
+    }
+
+    private String dialogFieldStyle() {
+        return "-fx-background-color: " + COLOR_BG_FIELD + ";" +
+               BACKGROUND_RADIUS_10 +
+               "-fx-border-color: " + COLOR_BORDER_LIGHT + ";" +
+               BORDER_RADIUS_10 +
+               "-fx-border-width: 1;" +
+               "-fx-font-size: 13px;" +
+               "-fx-text-fill: " + COLOR_TEXT_MAIN + ";" +
+               "-fx-prompt-text-fill: " + COLOR_TEXT_PROMPT + ";";
+    }
+
+    private String messageStyle(String color) {
+        return "-fx-font-size: 13px;" +
+               FONT_WEIGHT_BOLD +
+               "-fx-text-fill: " + color + ";";
+    }
+
+    private String cardStyle() {
+        return "-fx-background-color: " + WHITE + ";" +
+               BACKGROUND_RADIUS_16 +
+               "-fx-border-color: " + COLOR_BORDER_CARD + ";" +
+               BORDER_RADIUS_16 +
+               "-fx-border-width: 1;" +
+               "-fx-effect: dropshadow(gaussian, rgba(15,23,42,0.05), 14, 0.10, 0, 4);";
+    }
+
+    private String tableCardStyle() {
+        return "-fx-background-color: " + WHITE + ";" +
+               BACKGROUND_RADIUS_18 +
+               "-fx-border-color: " + COLOR_BORDER_CARD + ";" +
+               BORDER_RADIUS_18 +
+               "-fx-border-width: 1;" +
+               "-fx-effect: dropshadow(gaussian, rgba(15,23,42,0.05), 16, 0.10, 0, 6);";
+    }
+
+    private String dialogPaneStyle() {
+        return "-fx-background-color: " + WHITE + ";" +
+               BACKGROUND_RADIUS_18 +
+               "-fx-border-color: " + COLOR_BORDER_SUBTLE + ";" +
+               BORDER_RADIUS_18 +
+               "-fx-border-width: 1;";
+    }
+
+    private String dialogPrimaryButtonStyle() {
+        return "-fx-background-color: " + COLOR_PRIMARY + ";" +
+               "-fx-text-fill: " + WHITE + ";" +
+               "-fx-font-size: 13px;" +
+               FONT_WEIGHT_BOLD +
+               BACKGROUND_RADIUS_10 +
+               DIALOG_BUTTON_PADDING +
+               CURSOR_HAND;
+    }
+
+    private String dialogSecondaryButtonStyle() {
+        return "-fx-background-color: " + WHITE + ";" +
+               "-fx-text-fill: " + COLOR_TEXT_MAIN + ";" +
+               "-fx-font-size: 13px;" +
+               FONT_WEIGHT_BOLD +
+               "-fx-border-color: " + COLOR_BORDER_LIGHT + ";" +
+               BORDER_RADIUS_10 +
+               BACKGROUND_RADIUS_10 +
+               DIALOG_BUTTON_PADDING +
+               CURSOR_HAND;
     }
 
     private String formatRole(String role) {
         if (role == null || role.isBlank()) {
-            return "-";
+            return DASH;
         }
 
-        String formatted = role.replace("_", " ").toLowerCase();
+        String formatted = role.replace("_", " ").toLowerCase(Locale.ROOT);
         return Character.toUpperCase(formatted.charAt(0)) + formatted.substring(1);
     }
 
     private String safe(String value) {
-        return value == null ? "" : value;
+        return value == null ? EMPTY_VALUE : value;
     }
 
     public Parent getView() {

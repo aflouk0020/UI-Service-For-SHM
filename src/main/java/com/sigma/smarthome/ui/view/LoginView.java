@@ -21,6 +21,24 @@ import javafx.scene.layout.VBox;
  */
 public class LoginView {
 
+    private static final String PRIMARY_BLUE = "#2563eb";
+    private static final String PRIMARY_BLUE_HOVER = "#1d4ed8";
+    private static final String TEXT_DARK = "#1f2937";
+    private static final String TEXT_BODY = "#111827";
+    private static final String TEXT_MUTED = "#6b7280";
+    private static final String TEXT_ERROR = "#dc2626";
+    private static final String TEXT_SUCCESS = "#16a34a";
+    private static final String BORDER_LIGHT = "#d1d5db";
+    private static final String CARD_BORDER = "#e5e7eb";
+    private static final String FIELD_BACKGROUND = "#f9fafb";
+    private static final String PROMPT_TEXT = "#9ca3af";
+    private static final String WHITE = "white";
+
+    private static final String FONT_WEIGHT_BOLD = "-fx-font-weight: bold;";
+    private static final String BORDER_RADIUS_10 = "-fx-border-radius: 10;";
+    private static final String BACKGROUND_RADIUS_10 = "-fx-background-radius: 10;";
+    private static final String CURSOR_HAND = "-fx-cursor: hand;";
+
     private final BorderPane root = new BorderPane();
 
     private final Label titleLabel = new Label("Smart Home Maintenance Platform");
@@ -43,7 +61,7 @@ public class LoginView {
         configureRoot();
         configureLabels();
         configureFields();
-        configureButton();
+        configureButtons();
         configureMessageLabel();
         configureProgressIndicator();
         configureCard();
@@ -52,9 +70,7 @@ public class LoginView {
 
     private void configureRoot() {
         root.setPadding(new Insets(30));
-        root.setStyle(
-                "-fx-background-color: linear-gradient(to bottom right, #f8fafc, #eef2f7);"
-        );
+        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #f8fafc, #eef2f7);");
     }
 
     private void configureLabels() {
@@ -62,14 +78,11 @@ public class LoginView {
         titleLabel.setMaxWidth(340);
         titleLabel.setAlignment(Pos.CENTER);
         titleLabel.setStyle(
-                "-fx-font-size: 28px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-text-fill: #1f2937;"
+                buildTextStyle(28, true, TEXT_DARK)
         );
 
         subtitleLabel.setStyle(
-                "-fx-font-size: 14px;" +
-                "-fx-text-fill: #6b7280;"
+                buildTextStyle(14, false, TEXT_MUTED)
         );
     }
 
@@ -85,61 +98,30 @@ public class LoginView {
         passwordField.setStyle(commonFieldStyle());
     }
 
-    private void configureButton() {
+    private void configureButtons() {
         loginButton.setPrefWidth(340);
         loginButton.setPrefHeight(46);
         loginButton.setDefaultButton(true);
-        loginButton.setStyle(
-                "-fx-background-color: #2563eb;" +
-                "-fx-background-radius: 10;" +
-                "-fx-cursor: hand;" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 14px;" +
-                "-fx-font-weight: bold;"
+        loginButton.setStyle(primaryButtonStyle(PRIMARY_BLUE));
+
+        loginButton.setOnMouseEntered(event ->
+                loginButton.setStyle(primaryButtonStyle(PRIMARY_BLUE_HOVER))
         );
 
-        loginButton.setOnMouseEntered(e ->
-                loginButton.setStyle(
-                        "-fx-background-color: #1d4ed8;" +
-                        "-fx-background-radius: 10;" +
-                        "-fx-cursor: hand;" +
-                        "-fx-text-fill: white;" +
-                        "-fx-font-size: 14px;" +
-                        "-fx-font-weight: bold;"
-                )
+        loginButton.setOnMouseExited(event ->
+                loginButton.setStyle(primaryButtonStyle(PRIMARY_BLUE))
         );
 
-        loginButton.setOnMouseExited(e ->
-                loginButton.setStyle(
-                        "-fx-background-color: #2563eb;" +
-                        "-fx-background-radius: 10;" +
-                        "-fx-cursor: hand;" +
-                        "-fx-text-fill: white;" +
-                        "-fx-font-size: 14px;" +
-                        "-fx-font-weight: bold;"
-                )
-        );
         createAccountButton.setPrefWidth(340);
         createAccountButton.setPrefHeight(42);
-        createAccountButton.setStyle(
-                "-fx-background-color: white;" +
-                "-fx-border-color: #d1d5db;" +
-                "-fx-border-radius: 10;" +
-                "-fx-background-radius: 10;" +
-                "-fx-text-fill: #1f2937;" +
-                "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;"
-        );
+        createAccountButton.setStyle(secondaryButtonStyle());
     }
 
     private void configureMessageLabel() {
         messageLabel.setWrapText(true);
         messageLabel.setMaxWidth(340);
         messageLabel.setAlignment(Pos.CENTER);
-        messageLabel.setStyle(
-                "-fx-font-size: 12px;" +
-                "-fx-text-fill: #dc2626;"
-        );
+        messageLabel.setStyle(messageStyle(TEXT_ERROR));
         messageLabel.setVisible(false);
         messageLabel.setManaged(false);
     }
@@ -159,9 +141,9 @@ public class LoginView {
         loginCard.setMaxWidth(430);
         loginCard.setPrefWidth(430);
         loginCard.setStyle(
-                "-fx-background-color: white;" +
+                "-fx-background-color: " + WHITE + ";" +
                 "-fx-background-radius: 18;" +
-                "-fx-border-color: #e5e7eb;" +
+                "-fx-border-color: " + CARD_BORDER + ";" +
                 "-fx-border-radius: 18;" +
                 "-fx-border-width: 1;" +
                 "-fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 18, 0.12, 0, 6);"
@@ -192,14 +174,44 @@ public class LoginView {
     }
 
     private String commonFieldStyle() {
-        return "-fx-background-color: #f9fafb;" +
-               "-fx-background-radius: 10;" +
-               "-fx-border-color: #d1d5db;" +
-               "-fx-border-radius: 10;" +
+        return "-fx-background-color: " + FIELD_BACKGROUND + ";" +
+               BACKGROUND_RADIUS_10 +
+               "-fx-border-color: " + BORDER_LIGHT + ";" +
+               BORDER_RADIUS_10 +
                "-fx-border-width: 1;" +
                "-fx-font-size: 14px;" +
-               "-fx-text-fill: #111827;" +
-               "-fx-prompt-text-fill: #9ca3af;";
+               "-fx-text-fill: " + TEXT_BODY + ";" +
+               "-fx-prompt-text-fill: " + PROMPT_TEXT + ";";
+    }
+
+    private String primaryButtonStyle(String backgroundColor) {
+        return "-fx-background-color: " + backgroundColor + ";" +
+               BACKGROUND_RADIUS_10 +
+               CURSOR_HAND +
+               "-fx-text-fill: " + WHITE + ";" +
+               "-fx-font-size: 14px;" +
+               FONT_WEIGHT_BOLD;
+    }
+
+    private String secondaryButtonStyle() {
+        return "-fx-background-color: " + WHITE + ";" +
+               "-fx-border-color: " + BORDER_LIGHT + ";" +
+               BORDER_RADIUS_10 +
+               BACKGROUND_RADIUS_10 +
+               "-fx-text-fill: " + TEXT_DARK + ";" +
+               "-fx-font-size: 13px;" +
+               FONT_WEIGHT_BOLD;
+    }
+
+    private String messageStyle(String color) {
+        return "-fx-font-size: 12px;" +
+               "-fx-text-fill: " + color + ";";
+    }
+
+    private String buildTextStyle(int fontSize, boolean bold, String color) {
+        return "-fx-font-size: " + fontSize + "px;" +
+               (bold ? FONT_WEIGHT_BOLD : "") +
+               "-fx-text-fill: " + color + ";";
     }
 
     public Parent getView() {
@@ -225,10 +237,8 @@ public class LoginView {
 
     public void setMessage(String message, boolean isError) {
         messageLabel.setText(message == null ? "" : message);
-        messageLabel.setStyle(
-                "-fx-font-size: 12px;" +
-                "-fx-text-fill: " + (isError ? "#dc2626;" : "#16a34a;")
-        );
+        messageLabel.setStyle(messageStyle(isError ? TEXT_ERROR : TEXT_SUCCESS));
+
         boolean hasMessage = message != null && !message.isBlank();
         messageLabel.setVisible(hasMessage);
         messageLabel.setManaged(hasMessage);
@@ -246,7 +256,7 @@ public class LoginView {
     }
 
     public void setOnLogin(Runnable action) {
-        loginButton.setOnAction(e -> {
+        loginButton.setOnAction(event -> {
             hideMessage();
             action.run();
         });
@@ -261,8 +271,9 @@ public class LoginView {
     public void focusEmailField() {
         emailField.requestFocus();
     }
+
     public void setOnCreateAccount(Runnable action) {
-        createAccountButton.setOnAction(e -> {
+        createAccountButton.setOnAction(event -> {
             hideMessage();
             action.run();
         });
