@@ -20,11 +20,10 @@ import org.mockito.Mockito;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class PropertyViewTest {
 
@@ -37,11 +36,22 @@ class PropertyViewTest {
     void clearSession() {
         SessionManager.clearSession();
     }
-    
+
     private void invokePrivateMethod(Object target, String methodName) throws Exception {
-        var method = target.getClass().getDeclaredMethod(methodName);
-        method.setAccessible(true);
-        method.invoke(target);
+        Class<?> current = target.getClass();
+
+        while (current != null) {
+            try {
+                Method method = current.getDeclaredMethod(methodName);
+                method.setAccessible(true);
+                method.invoke(target);
+                return;
+            } catch (NoSuchMethodException ex) {
+                current = current.getSuperclass();
+            }
+        }
+
+        throw new NoSuchMethodException(methodName);
     }
 
     @Test
@@ -424,27 +434,6 @@ class PropertyViewTest {
         verify(fakeService, times(1)).getProperties();
     }
 
-    private PropertyView createView(List<Property> properties) {
-        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
-        when(fakeService.getProperties()).thenReturn(properties);
-        return new PropertyView(fakeService);
-    }
-
-    private PropertyView createView(Property... properties) {
-        return createView(List.of(properties));
-    }
-
-    private Property property(String id, String address, String propertyType, String managerId) {
-        return new Property(id, address, propertyType, managerId);
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T getPrivateField(Object target, String fieldName, Class<T> type) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return (T) field.get(target);
-    }
-    
     @Test
     void handleAddProperty_readOnly_showsMessage() throws Exception {
         SessionManager.startSession("token", "staff@test.com", "MAINTENANCE_STAFF");
@@ -496,7 +485,7 @@ class PropertyViewTest {
         assertTrue(messageLabel.isVisible());
         assertEquals("Please select a property to delete.", messageLabel.getText());
     }
-    
+
     @Test
     void propertyView_createFormLabel_returnsStyledLabel() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
@@ -515,7 +504,7 @@ class PropertyViewTest {
         assertNotNull(label.getStyle());
         assertTrue(label.getStyle().contains("-fx-font-size"));
     }
-    
+
     @Test
     void propertyView_createDialogField_returnsConfiguredField() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
@@ -535,7 +524,7 @@ class PropertyViewTest {
         assertEquals(42.0, field.getPrefHeight());
         assertNotNull(field.getStyle());
     }
-    
+
     @Test
     void propertyView_dialogStyleHelpers_returnExpectedStyleStrings() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
@@ -562,7 +551,7 @@ class PropertyViewTest {
         assertTrue(primary.contains("-fx-text-fill"));
         assertTrue(secondary.contains("-fx-border-color"));
     }
-    
+
     @Test
     void propertyView_helperMethods_returnExpectedValues() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
@@ -591,7 +580,7 @@ class PropertyViewTest {
         assertEquals("PROP-ABC", toReference.invoke(view, "abc"));
         assertEquals("PROP-12345678", toReference.invoke(view, "123456789"));
     }
-    
+
     @Test
     void propertyView_refreshFilterOptions_preservesValidSelection() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
@@ -616,7 +605,7 @@ class PropertyViewTest {
 
         assertEquals("House", propertyTypeFilter.getValue());
     }
-    
+
     @Test
     void propertyView_showMessage_setsSuccessState() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
@@ -769,6 +758,7 @@ class PropertyViewTest {
         assertEquals(1, propertyTable.getItems().size());
         assertEquals("Dublin", propertyTable.getItems().get(0).getAddress());
     }
+
     @ParameterizedTest
     @CsvSource({
             "MAINTENANCE_STAFF,handleAddProperty,'Maintenance staff can view property information only.'",
@@ -796,7 +786,7 @@ class PropertyViewTest {
         assertEquals(expectedMessage, messageLabel.getText());
         assertTrue(messageLabel.isVisible());
     }
-    
+
     @ParameterizedTest
     @CsvSource({
             "toReference,abc123,PROP-ABC123",
@@ -817,5 +807,303 @@ class PropertyViewTest {
         String result = (String) method.invoke(view, input);
 
         assertEquals(expected, result);
+    }
+
+    @Test
+    void propertyView_isMaintenanceStaff_returnsTrueForStaff() throws Exception {
+        SessionManager.startSession("token", "staff@test.com", "MAINTENANCE_STAFF");
+        PropertyView view = createView(List.of());
+
+        Method method = PropertyView.class.getDeclaredMethod("isMaintenanceStaff");
+        method.setAccessible(true);
+
+        boolean result = (boolean) method.invoke(view);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void propertyView_isMaintenanceStaff_returnsFalseForManager() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
+
+        Method method = PropertyView.class.getDeclaredMethod("isMaintenanceStaff");
+        method.setAccessible(true);
+
+        boolean result = (boolean) method.invoke(view);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void propertyView_searchMatchesPropertyType() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        PropertyView view = createView(
+                property("1", "Athlone", "House", "m1"),
+                property("2", "Dublin", "Apartment", "m2")
+        );
+
+        TextField searchField = getPrivateField(view, "searchField", TextField.class);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+
+        searchField.setText("Apartment");
+
+        assertEquals(1, propertyTable.getItems().size());
+        assertEquals("Dublin", propertyTable.getItems().get(0).getAddress());
+    }
+
+    @Test
+    void propertyView_searchMatchesPropertyId() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        PropertyView view = createView(
+                property("prop-1", "Athlone", "House", "m1"),
+                property("prop-2", "Dublin", "Apartment", "m2")
+        );
+
+        TextField searchField = getPrivateField(view, "searchField", TextField.class);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+
+        searchField.setText("prop-2");
+
+        assertEquals(1, propertyTable.getItems().size());
+        assertEquals("Dublin", propertyTable.getItems().get(0).getAddress());
+    }
+
+    @Test
+    void handleAddProperty_success_createsPropertyAndShowsSuccessMessage() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        PropertyApiService fakeService = mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of());
+
+        TestablePropertyView view = new TestablePropertyView(fakeService);
+        view.dialogResult = Optional.of(new PropertyView.PropertyFormData("Athlone", "House"));
+
+        invokePrivateMethod(view, "handleAddProperty");
+
+        verify(fakeService).createProperty("Athlone", "House");
+        verify(fakeService, times(2)).getProperties();
+
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+        assertEquals("Property created successfully.", messageLabel.getText());
+    }
+
+    @Test
+    void handleAddProperty_serviceFailure_showsErrorMessage() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        PropertyApiService fakeService = mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of());
+        when(fakeService.createProperty("Athlone", "House"))
+                .thenThrow(new PropertyApiService.PropertyApiException("boom"));
+
+        TestablePropertyView view = new TestablePropertyView(fakeService);
+        view.dialogResult = Optional.of(new PropertyView.PropertyFormData("Athlone", "House"));
+
+        invokePrivateMethod(view, "handleAddProperty");
+
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+        assertEquals("Failed to create property.", messageLabel.getText());
+    }
+
+    @Test
+    void handleAddProperty_cancelledDialog_doesNothing() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        PropertyApiService fakeService = mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of());
+
+        TestablePropertyView view = new TestablePropertyView(fakeService);
+        view.dialogResult = Optional.empty();
+
+        invokePrivateMethod(view, "handleAddProperty");
+
+        verify(fakeService, never()).createProperty(anyString(), anyString());
+        verify(fakeService, times(1)).getProperties();
+    }
+
+    @Test
+    void handleEditProperty_success_updatesPropertyAndShowsSuccessMessage() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        Property selected = property("1", "Athlone", "House", "m1");
+
+        PropertyApiService fakeService = mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of(selected));
+
+        TestablePropertyView view = new TestablePropertyView(fakeService);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        propertyTable.getSelectionModel().select(0);
+        view.dialogResult = Optional.of(new PropertyView.PropertyFormData("Galway", "Apartment"));
+
+        invokePrivateMethod(view, "handleEditProperty");
+
+        verify(fakeService).updateProperty("1", "Galway", "Apartment");
+        verify(fakeService, times(2)).getProperties();
+
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+        assertEquals("Property updated successfully.", messageLabel.getText());
+    }
+
+    @Test
+    void handleEditProperty_serviceFailure_showsErrorMessage() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        Property selected = property("1", "Athlone", "House", "m1");
+
+        PropertyApiService fakeService = mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of(selected));
+        doThrow(new PropertyApiService.PropertyApiException("boom"))
+                .when(fakeService).updateProperty("1", "Galway", "Apartment");
+
+        TestablePropertyView view = new TestablePropertyView(fakeService);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        propertyTable.getSelectionModel().select(0);
+        view.dialogResult = Optional.of(new PropertyView.PropertyFormData("Galway", "Apartment"));
+
+        invokePrivateMethod(view, "handleEditProperty");
+
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+        assertEquals("Failed to update property.", messageLabel.getText());
+    }
+
+    @Test
+    void handleEditProperty_cancelledDialog_doesNothing() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        Property selected = property("1", "Athlone", "House", "m1");
+
+        PropertyApiService fakeService = mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of(selected));
+
+        TestablePropertyView view = new TestablePropertyView(fakeService);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        propertyTable.getSelectionModel().select(0);
+        view.dialogResult = Optional.empty();
+
+        invokePrivateMethod(view, "handleEditProperty");
+
+        verify(fakeService, never()).updateProperty(anyString(), anyString(), anyString());
+        verify(fakeService, times(1)).getProperties();
+    }
+
+    @Test
+    void handleDeleteProperty_confirmed_success_deletesPropertyAndShowsSuccessMessage() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        Property selected = property("1", "Athlone", "House", "m1");
+
+        PropertyApiService fakeService = mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of(selected));
+
+        TestablePropertyView view = new TestablePropertyView(fakeService);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        propertyTable.getSelectionModel().select(0);
+        view.confirmDeleteResult = true;
+
+        invokePrivateMethod(view, "handleDeleteProperty");
+
+        verify(fakeService).deleteProperty("1");
+        verify(fakeService, times(2)).getProperties();
+
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+        assertEquals("Property deleted successfully.", messageLabel.getText());
+    }
+
+    @Test
+    void handleDeleteProperty_confirmed_failure_showsErrorMessage() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        Property selected = property("1", "Athlone", "House", "m1");
+
+        PropertyApiService fakeService = mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of(selected));
+        doThrow(new PropertyApiService.PropertyApiException("boom"))
+                .when(fakeService).deleteProperty("1");
+
+        TestablePropertyView view = new TestablePropertyView(fakeService);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        propertyTable.getSelectionModel().select(0);
+        view.confirmDeleteResult = true;
+
+        invokePrivateMethod(view, "handleDeleteProperty");
+
+        Label messageLabel = getPrivateField(view, "messageLabel", Label.class);
+        assertEquals("Failed to delete property.", messageLabel.getText());
+    }
+
+    @Test
+    void handleDeleteProperty_cancelled_doesNothing() throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+
+        Property selected = property("1", "Athlone", "House", "m1");
+
+        PropertyApiService fakeService = mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(List.of(selected));
+
+        TestablePropertyView view = new TestablePropertyView(fakeService);
+        TableView<Property> propertyTable = getPrivateField(view, "propertyTable", TableView.class);
+        propertyTable.getSelectionModel().select(0);
+        view.confirmDeleteResult = false;
+
+        invokePrivateMethod(view, "handleDeleteProperty");
+
+        verify(fakeService, never()).deleteProperty(anyString());
+        verify(fakeService, times(1)).getProperties();
+    }
+
+    private PropertyView createView(List<Property> properties) {
+        PropertyApiService fakeService = Mockito.mock(PropertyApiService.class);
+        when(fakeService.getProperties()).thenReturn(properties);
+        return new PropertyView(fakeService);
+    }
+
+    private PropertyView createView(Property... properties) {
+        return createView(List.of(properties));
+    }
+
+    private Property property(String id, String address, String propertyType, String managerId) {
+        return new Property(id, address, propertyType, managerId);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T getPrivateField(Object target, String fieldName, Class<T> type) throws Exception {
+        Class<?> current = target.getClass();
+        while (current != null) {
+            try {
+                Field field = current.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                return (T) field.get(target);
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            }
+        }
+        throw new NoSuchFieldException(fieldName);
+    }
+
+    private static class TestablePropertyView extends PropertyView {
+        Optional<PropertyFormData> dialogResult = Optional.empty();
+        boolean confirmDeleteResult = false;
+
+        TestablePropertyView(PropertyApiService propertyApiService) {
+            super(propertyApiService);
+        }
+
+        @Override
+        protected Optional<PropertyFormData> openPropertyFormDialog(
+                String title,
+                String header,
+                String defaultAddress,
+                String defaultPropertyType
+        ) {
+            return dialogResult;
+        }
+
+        @Override
+        protected boolean confirmDelete(Property selected) {
+            return confirmDeleteResult;
+        }
     }
 }

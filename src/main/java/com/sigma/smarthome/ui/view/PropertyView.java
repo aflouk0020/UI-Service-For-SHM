@@ -393,7 +393,7 @@ public class PropertyView {
         }
 
         try {
-            Optional<PropertyFormData> result = showPropertyFormDialog(
+            Optional<PropertyFormData> result = openPropertyFormDialog(
                     "Create Property",
                     "Enter the new property details.",
                     null,
@@ -427,7 +427,7 @@ public class PropertyView {
         }
 
         try {
-            Optional<PropertyFormData> result = showPropertyFormDialog(
+            Optional<PropertyFormData> result = openPropertyFormDialog(
                     "Edit Property",
                     "Update the selected property details.",
                     selected.getAddress(),
@@ -460,13 +460,7 @@ public class PropertyView {
             return;
         }
 
-        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmAlert.setTitle("Delete Property");
-        confirmAlert.setHeaderText("Confirm property deletion");
-        confirmAlert.setContentText("Are you sure you want to delete property " + toReference(selected.getId()) + "?");
-
-        Optional<ButtonType> result = confirmAlert.showAndWait();
-        if (result.isEmpty() || result.get() != ButtonType.OK) {
+        if (!confirmDelete(selected)) {
             return;
         }
 
@@ -477,6 +471,25 @@ public class PropertyView {
         } catch (PropertyApiService.PropertyApiException ex) {
             showMessage("Failed to delete property.", true);
         }
+    }
+
+    protected Optional<PropertyFormData> openPropertyFormDialog(
+            String title,
+            String header,
+            String defaultAddress,
+            String defaultPropertyType
+    ) {
+        return showPropertyFormDialog(title, header, defaultAddress, defaultPropertyType);
+    }
+
+    protected boolean confirmDelete(Property selected) {
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Delete Property");
+        confirmAlert.setHeaderText("Confirm property deletion");
+        confirmAlert.setContentText("Are you sure you want to delete property " + toReference(selected.getId()) + "?");
+
+        Optional<ButtonType> result = confirmAlert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
     }
 
     private Optional<PropertyFormData> showPropertyFormDialog(
@@ -797,7 +810,6 @@ public class PropertyView {
         return root;
     }
 
-    private record PropertyFormData(String address, String propertyType) {
+    static record PropertyFormData(String address, String propertyType) {
     }
 }
- 
