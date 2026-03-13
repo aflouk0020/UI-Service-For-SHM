@@ -336,4 +336,32 @@ class PropertyApiServiceTest {
 
         invalidJsonServer.stop(0);
     }
+    
+    @Test
+    void defaultConstructor_createsServiceSuccessfully() {
+        PropertyApiService service = new PropertyApiService();
+        assertNotNull(service);
+    }
+    
+    @Test
+    void updateProperty_connectionFailure_throwsException() {
+        PropertyApiService service = new PropertyApiService("http://localhost:1");
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                service.updateProperty("prop-1", "Athlone", "House")
+        );
+
+        assertTrue(ex.getMessage().contains("Failed to update property"));
+    }
+    
+    @Test
+    void deleteProperty_connectionFailure_throwsException() {
+        PropertyApiService service = new PropertyApiService("http://localhost:1");
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                service.deleteProperty("prop-1")
+        );
+
+        assertTrue(ex.getMessage().contains("Failed to delete property"));
+    }
 }
