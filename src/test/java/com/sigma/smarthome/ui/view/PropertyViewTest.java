@@ -691,45 +691,6 @@ class PropertyViewTest {
     }
 
     @Test
-    void propertyView_toReference_shortValue_formatsCorrectly() throws Exception {
-        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-        PropertyView view = createView(List.of());
-
-        Method method = PropertyView.class.getDeclaredMethod("toReference", String.class);
-        method.setAccessible(true);
-
-        String result = (String) method.invoke(view, "abc123");
-
-        assertEquals("PROP-ABC123", result);
-    }
-
-    @Test
-    void propertyView_toReference_blankValue_returnsDash() throws Exception {
-        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-        PropertyView view = createView(List.of());
-
-        Method method = PropertyView.class.getDeclaredMethod("toReference", String.class);
-        method.setAccessible(true);
-
-        String result = (String) method.invoke(view, "   ");
-
-        assertEquals("-", result);
-    }
-
-    @Test
-    void propertyView_formatRole_blankValue_returnsDash() throws Exception {
-        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
-        PropertyView view = createView(List.of());
-
-        Method method = PropertyView.class.getDeclaredMethod("formatRole", String.class);
-        method.setAccessible(true);
-
-        String result = (String) method.invoke(view, " ");
-
-        assertEquals("-", result);
-    }
-
-    @Test
     void propertyView_createEmptyStateLabel_returnsExpectedText() throws Exception {
         SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
         PropertyView view = createView(List.of());
@@ -834,5 +795,27 @@ class PropertyViewTest {
 
         assertEquals(expectedMessage, messageLabel.getText());
         assertTrue(messageLabel.isVisible());
+    }
+    
+    @ParameterizedTest
+    @CsvSource({
+            "toReference,abc123,PROP-ABC123",
+            "toReference,'   ',-",
+            "formatRole,' ',-"
+    })
+    void propertyView_helperMethod_formatsExpectedValue(
+            String methodName,
+            String input,
+            String expected
+    ) throws Exception {
+        SessionManager.startSession("token", "manager@test.com", "PROPERTY_MANAGER");
+        PropertyView view = createView(List.of());
+
+        Method method = PropertyView.class.getDeclaredMethod(methodName, String.class);
+        method.setAccessible(true);
+
+        String result = (String) method.invoke(view, input);
+
+        assertEquals(expected, result);
     }
 }
