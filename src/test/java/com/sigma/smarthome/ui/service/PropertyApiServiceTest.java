@@ -291,4 +291,49 @@ class PropertyApiServiceTest {
 
         assertTrue(ex.getMessage().contains("Failed to create property"));
     }
+    
+    @Test
+    void defaultConstructor_createsService() {
+        PropertyApiService service = new PropertyApiService();
+        assertNotNull(service);
+    }
+    
+    @Test
+    void getProperties_invalidJson_throwsPropertyApiException() throws IOException {
+        HttpServer invalidJsonServer = HttpServer.create(new InetSocketAddress(0), 0);
+        invalidJsonServer.createContext("/properties", exchange -> {
+            sendResponse(exchange, 200, "{ invalid json");
+        });
+        invalidJsonServer.start();
+
+        String invalidBaseUrl = "http://localhost:" + invalidJsonServer.getAddress().getPort();
+        PropertyApiService service = new PropertyApiService(invalidBaseUrl);
+
+        PropertyApiService.PropertyApiException ex =
+                assertThrows(PropertyApiService.PropertyApiException.class, service::getProperties);
+
+        assertTrue(ex.getMessage().contains("Failed to load properties"));
+
+        invalidJsonServer.stop(0);
+    }
+    
+    @Test
+    void createProperty_invalidJson_throwsPropertyApiException() throws IOException {
+        HttpServer invalidJsonServer = HttpServer.create(new InetSocketAddress(0), 0);
+        invalidJsonServer.createContext("/properties", exchange -> {
+            sendResponse(exchange, 201, "{ invalid json");
+        });
+        invalidJsonServer.start();
+
+        String invalidBaseUrl = "http://localhost:" + invalidJsonServer.getAddress().getPort();
+        PropertyApiService service = new PropertyApiService(invalidBaseUrl);
+
+        PropertyApiService.PropertyApiException ex =
+                assertThrows(PropertyApiService.PropertyApiException.class,
+                        () -> service.createProperty("Athlone", "House"));
+
+        assertTrue(ex.getMessage().contains("Failed to create property"));
+
+        invalidJsonServer.stop(0);
+    }
 }

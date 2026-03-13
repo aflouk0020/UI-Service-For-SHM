@@ -131,4 +131,22 @@ class UserApiServiceTest {
             os.write(bytes);
         }
     }
+    
+    @Test
+    void login_connectionFailure_throwsConnectException() {
+        UserApiService service = new UserApiService("http://localhost:1");
+
+        assertThrows(java.net.ConnectException.class, () ->
+                service.login("test@example.com", "Password123!")
+        );
+    }
+
+    @Test
+    void register_connectionFailure_throwsConnectException() {
+        UserApiService service = new UserApiService("http://localhost:1");
+
+        assertThrows(java.net.ConnectException.class, () ->
+                service.register("newuser@example.com", "Password123!", "PROPERTY_MANAGER")
+        );
+    }
 }
