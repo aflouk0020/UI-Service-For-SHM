@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class UserApiService {
 
-    private static final String DEFAULT_BASE_URL = "http://localhost:8081";
+	private static final String DEFAULT_BASE_URL = com.sigma.smarthome.ui.util.ApiConfig.API_GATEWAY_BASE_URL;
     private static final String LOGIN_ENDPOINT = "/auth/login";
     private static final String REGISTER_ENDPOINT = "/auth/register";
 
