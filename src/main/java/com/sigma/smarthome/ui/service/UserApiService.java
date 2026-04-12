@@ -75,7 +75,7 @@ public class UserApiService {
         );
     }
 
-    public String register(String email, String password, String role) throws IOException, InterruptedException {
+    public RegisterResult register(String email, String password, String role) throws IOException, InterruptedException {
         String requestBody = objectMapper.writeValueAsString(
                 Map.of(
                         FIELD_EMAIL, email,
@@ -100,12 +100,17 @@ public class UserApiService {
 
         JsonNode json = objectMapper.readTree(response.body());
         String registeredEmail = getNullableText(json, FIELD_EMAIL);
+        String registeredRole = getNullableText(json, FIELD_ROLE);
 
         if (registeredEmail == null || registeredEmail.isBlank()) {
             throw new UserApiException("Registration failed. Missing email in response.");
         }
 
-        return registeredEmail;
+        if (registeredRole == null || registeredRole.isBlank()) {
+            registeredRole = role;
+        }
+
+        return new RegisterResult(registeredEmail, registeredRole);
     }
 
     private JwtUserInfo extractUserInfoFromJwt(String jwt) {
@@ -146,6 +151,9 @@ public class UserApiService {
     }
 
     public record LoginResult(String accessToken, String email, String role) {
+    }
+
+    public record RegisterResult(String email, String role) {
     }
 
     public static class UserApiException extends RuntimeException {
