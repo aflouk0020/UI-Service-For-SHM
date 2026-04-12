@@ -2,7 +2,9 @@ package com.sigma.smarthome.ui.view;
 
 import com.sigma.smarthome.ui.model.MaintenanceHistoryItem;
 import com.sigma.smarthome.ui.model.MaintenanceRequest;
+import com.sigma.smarthome.ui.model.Property;
 import com.sigma.smarthome.ui.service.MaintenanceApiService;
+import com.sigma.smarthome.ui.service.PropertyApiService;
 import com.sigma.smarthome.ui.util.SessionManager;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -22,7 +24,9 @@ public class MaintenanceRequestsView {
     private final Label titleLabel = new Label("Maintenance Requests");
     private final Label subtitleLabel = new Label("Create, review, assign, and track maintenance activity.");
     private final Label messageLabel = new Label();
-
+    private final PropertyApiService propertyApiService = new PropertyApiService();
+    private final ComboBox<Property> propertyComboBox = new ComboBox<>();
+    
     private final Button refreshButton = new Button("Refresh");
     private final Button createButton = new Button("Create Request");
     private final Button assignButton = new Button("Assign Staff");
@@ -39,7 +43,11 @@ public class MaintenanceRequestsView {
 
     public MaintenanceRequestsView() {
         initialise();
-        loadRequests();
+        if (isPropertyManager()) {
+            loadRequests();
+        } else {
+            showMessage("Maintenance staff request list endpoint is not yet connected.", false);
+        }
     }
 
     private void initialise() {
@@ -49,6 +57,7 @@ public class MaintenanceRequestsView {
         configureButtons();
         configureTable();
         applyRoleAccess();
+        configurePropertyDropdown();
     }
 
     private void configureRoot() {
@@ -64,6 +73,45 @@ public class MaintenanceRequestsView {
         messageLabel.setManaged(false);
 
         root.getChildren().addAll(titleLabel, subtitleLabel, messageLabel);
+    }
+    
+    private void configurePropertyDropdown() {
+        propertyComboBox.setPrefWidth(320);
+        propertyComboBox.setPromptText("Select property");
+
+        propertyComboBox.setCellFactory(listView -> new ListCell<>() {
+            @Override
+            protected void updateItem(Property item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getAddress() + " (" + item.getId() + ")");
+                }
+            }
+        });
+
+        propertyComboBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Property item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getAddress() + " (" + item.getId() + ")");
+                }
+            }
+        });
+    }
+    
+    private void loadPropertiesForDropdown() {
+        try {
+            List<Property> properties = propertyApiService.getProperties();
+            propertyComboBox.setItems(FXCollections.observableArrayList(properties));
+            propertyComboBox.getSelectionModel().clearSelection();
+        } catch (RuntimeException ex) {
+            showMessage("Failed to load properties for request creation.", true);
+        }
     }
 
     private void configureFilters() {
@@ -139,7 +187,11 @@ public class MaintenanceRequestsView {
         if (isPropertyManager()) {
             updateStatusButton.setDisable(true);
         } else if (isMaintenanceStaff()) {
+            createButton.setDisable(true);
             assignButton.setDisable(true);
+            statusFilter.setDisable(true);
+            priorityFilter.setDisable(true);
+            refreshButton.setDisable(true);
         }
     }
 
@@ -168,14 +220,15 @@ public class MaintenanceRequestsView {
     }
 
     private void openCreateDialog() {
+        loadPropertiesForDropdown();
+
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Create Maintenance Request");
 
         ButtonType createType = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(createType, ButtonType.CANCEL);
 
-        TextField propertyIdField = new TextField();
-        propertyIdField.setPromptText("Property ID");
+        propertyComboBox.getSelectionModel().clearSelection();
 
         TextField descriptionField = new TextField();
         descriptionField.setPromptText("Description");
@@ -185,7 +238,7 @@ public class MaintenanceRequestsView {
         priorityBox.setPromptText("Priority");
 
         VBox content = new VBox(12,
-                new Label("Property ID"), propertyIdField,
+                new Label("Property"), propertyComboBox,
                 new Label("Description"), descriptionField,
                 new Label("Priority"), priorityBox
         );
@@ -196,11 +249,23 @@ public class MaintenanceRequestsView {
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isPresent() && result.get() == createType) {
             try {
+                Property selectedProperty = propertyComboBox.getValue();
+
+                if (selectedProperty == null
+                        || descriptionField.getText() == null
+                        || descriptionField.getText().isBlank()
+                        || priorityBox.getValue() == null
+                        || priorityBox.getValue().isBlank()) {
+                    showMessage("Property, description, and priority are required.", true);
+                    return;
+                }
+
                 maintenanceApiService.createRequest(
-                        propertyIdField.getText().trim(),
+                        selectedProperty.getId(),
                         descriptionField.getText().trim(),
                         priorityBox.getValue()
                 );
+
                 loadRequests();
                 showMessage("Maintenance request created successfully.", false);
             } catch (RuntimeException ex) {

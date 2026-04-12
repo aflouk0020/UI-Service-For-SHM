@@ -66,7 +66,7 @@ public class MaintenanceApiService {
                 return objectMapper.readValue(response.body(), new TypeReference<>() {});
             }
 
-            throw new MaintenanceApiException("Failed to load maintenance requests. HTTP " + response.statusCode());
+            throw new MaintenanceApiException("Failed to load maintenance requests. " + extractErrorMessage(response));
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new MaintenanceApiException("Failed to load maintenance requests.", ex);
@@ -106,6 +106,17 @@ public class MaintenanceApiService {
             throw new MaintenanceApiException("Failed to create maintenance request.", ex);
         } catch (IOException ex) {
             throw new MaintenanceApiException("Failed to create maintenance request.", ex);
+        }
+    }
+    
+    private String extractErrorMessage(HttpResponse<String> response) {
+        try {
+            if (response.body() == null || response.body().isBlank()) {
+                return "HTTP " + response.statusCode();
+            }
+            return response.body();
+        } catch (Exception ex) {
+            return "HTTP " + response.statusCode();
         }
     }
 
