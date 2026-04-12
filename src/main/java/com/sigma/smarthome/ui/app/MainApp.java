@@ -96,8 +96,12 @@ public class MainApp extends Application {
             registerView.setLoading(true);
 
             try {
-                String registeredEmail = userApiService.register(email, password, role);
-                registerView.setMessage("Account created successfully for " + registeredEmail + ".", false);
+            	var registeredUser = userApiService.register(email, password, role);
+            	registerView.setMessage(
+            	        "Account created successfully for " + registeredUser.email()
+            	                + " as " + registeredUser.role() + ".",
+            	        false
+            	);
 
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();

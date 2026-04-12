@@ -11,6 +11,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
@@ -33,6 +35,19 @@ public class NotificationsView {
             DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
 
     private final VBox root = new VBox(20);
+	 // Summary cards
+    private final Label totalCountLabel = new Label("0");
+    private final Label unreadCountLabel = new Label("0");
+    private final Label readCountLabel = new Label("0");
+    private final Label latestTypeLabel = new Label("-");
+
+    // Actions
+    private final Button markSelectedReadButton = new Button("Mark Selected Read");
+    private final Button markAllReadButton = new Button("Mark All Read");
+
+    // Filters
+    private final CheckBox unreadOnlyCheckBox = new CheckBox("Unread only");
+    private final ComboBox<String> typeFilter = new ComboBox<>();
 
     private final Label titleLabel = new Label("Notifications");
     private final Label subtitleLabel = new Label("Stay updated on recent system events and user-specific alerts.");
@@ -57,7 +72,8 @@ public class NotificationsView {
     private void initialise() {
         configureRoot();
         configureHeader();
-        configureActions();
+        configureSummaryCards();   // NEW
+        configureActions();        // UPDATED
         configureTable();
     }
 
@@ -78,14 +94,129 @@ public class NotificationsView {
 
         root.getChildren().addAll(titleLabel, subtitleLabel, messageLabel, statusLabel);
     }
+    
+    private void configureSummaryCards() {
+        HBox cardsRow = new HBox(16);
+        cardsRow.setAlignment(Pos.CENTER_LEFT);
+
+        cardsRow.getChildren().addAll(
+                createSummaryCard("Total", totalCountLabel),
+                createSummaryCard("Unread", unreadCountLabel),
+                createSummaryCard("Read", readCountLabel),
+                createSummaryCard("Latest Type", latestTypeLabel)
+        );
+
+        root.getChildren().add(cardsRow);
+    }
+
+    private VBox createSummaryCard(String title, Label valueLabel) {
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #94a3b8;");
+
+        valueLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+
+        VBox card = new VBox(8, titleLabel, valueLabel);
+        card.setPadding(new Insets(16));
+        card.setPrefWidth(180);
+        card.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-background-radius: 16;" +
+                "-fx-border-color: #e2e8f0;" +
+                "-fx-border-radius: 16;" +
+                "-fx-border-width: 1;"
+        );
+
+        return card;
+    }
 
     private void configureActions() {
         refreshButton.setOnAction(e -> loadNotifications());
 
-        HBox actionRow = new HBox(refreshButton);
+        markSelectedReadButton.setOnAction(e -> markSelectedAsRead());
+        markAllReadButton.setOnAction(e -> markAllAsRead());
+
+        typeFilter.getItems().addAll("", "ASSIGNMENT", "STATUS_UPDATE", "SUCCESS", "WARNING", "ERROR");
+        typeFilter.setPromptText("Filter by type");
+
+        unreadOnlyCheckBox.setOnAction(e -> applyFilters());
+        typeFilter.setOnAction(e -> applyFilters());
+
+        HBox actionRow = new HBox(12,
+                refreshButton,
+                markSelectedReadButton,
+                markAllReadButton,
+                unreadOnlyCheckBox,
+                typeFilter
+        );
+
         actionRow.setAlignment(Pos.CENTER_LEFT);
 
         root.getChildren().add(actionRow);
+    }
+    
+    private void applyFilters() {
+        List<NotificationItem> all = notificationApiService.getNotifications(0, PAGE_SIZE);
+
+        boolean unreadOnly = unreadOnlyCheckBox.isSelected();
+        String selectedType = typeFilter.getValue();
+
+        List<NotificationItem> filtered = all.stream()
+                .filter(n -> !unreadOnly || !Boolean.TRUE.equals(n.getIsRead()))
+                .filter(n -> selectedType == null || selectedType.isBlank()
+                        || selectedType.equalsIgnoreCase(n.getType()))
+                .toList();
+
+        notificationData.setAll(filtered);
+        updateSummary(filtered);
+    }
+    
+    private void updateSummary(List<NotificationItem> list) {
+        int total = list.size();
+        int unread = (int) list.stream().filter(n -> !Boolean.TRUE.equals(n.getIsRead())).count();
+        int read = total - unread;
+
+        totalCountLabel.setText(String.valueOf(total));
+        unreadCountLabel.setText(String.valueOf(unread));
+        readCountLabel.setText(String.valueOf(read));
+
+        latestTypeLabel.setText(
+                list.isEmpty() ? "-" : safe(list.get(0).getType())
+        );
+    }
+    
+    private void markSelectedAsRead() {
+        NotificationItem selected = table.getSelectionModel().getSelectedItem();
+
+        if (selected == null) return;
+        if (Boolean.TRUE.equals(selected.getIsRead())) return;
+
+        try {
+            notificationApiService.markAsRead(selected.getId());
+            selected.setIsRead(true);
+
+            table.refresh();
+            updateSummary(notificationData);
+
+        } catch (RuntimeException ex) {
+            showError("Failed to mark notification as read.");
+        }
+    }
+    
+    private void markAllAsRead() {
+        try {
+            for (NotificationItem item : notificationData) {
+                if (!Boolean.TRUE.equals(item.getIsRead())) {
+                    notificationApiService.markAsRead(item.getId());
+                    item.setIsRead(true);
+                }
+            }
+
+            table.refresh();
+            updateSummary(notificationData);
+
+        } catch (RuntimeException ex) {
+            showError("Failed to mark all notifications as read.");
+        }
     }
 
     private void configureTable() {
@@ -125,7 +256,7 @@ public class NotificationsView {
                 if (empty || item == null) {
                     setStyle("");
                 } else if (!Boolean.TRUE.equals(item.getIsRead())) {
-                	setStyle("-fx-background-color: #eef6ff; -fx-font-weight: bold;");
+                    setStyle("-fx-background-color: #eef6ff; -fx-font-weight: bold;");
                 } else {
                     setStyle("");
                 }
@@ -167,16 +298,13 @@ public class NotificationsView {
         try {
             hideError();
 
-            List<NotificationItem> notifications = notificationApiService.getNotifications(0, PAGE_SIZE);
-            notificationData.setAll(notifications);
+            List<NotificationItem> notifications =
+                    notificationApiService.getNotifications(0, PAGE_SIZE);
 
-            if (notifications.isEmpty()) {
-                statusLabel.setText("No notifications found for this user.");
-            } else if (notifications.size() == 1) {
-                statusLabel.setText("Showing 1 notification.");
-            } else {
-                statusLabel.setText("Showing " + notifications.size() + " notifications.");
-            }
+            notificationData.setAll(notifications);
+            updateSummary(notifications);
+
+            statusLabel.setText("Showing " + notifications.size() + " notifications.");
 
         } catch (RuntimeException ex) {
             notificationData.clear();
