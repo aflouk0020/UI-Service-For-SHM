@@ -84,6 +84,29 @@ public class NotificationApiService {
             throw new NotificationApiException("Failed to load notifications.", ex);
         }
     }
+    
+    public void markAsRead(String notificationId) {
+        try {
+            HttpRequest request = baseRequest(BASE_PATH + "/" + encode(notificationId) + "/read")
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (!isSuccess(response.statusCode())) {
+                throw new NotificationApiException(
+                        "Failed to mark notification as read. HTTP " + response.statusCode() + " - " + response.body()
+                );
+            }
+
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new NotificationApiException("Failed to mark notification as read.", ex);
+        } catch (IOException ex) {
+            throw new NotificationApiException("Failed to mark notification as read.", ex);
+        }
+    }
 
     private HttpRequest.Builder baseRequest(String path) {
         String token = SessionManager.getAccessToken();

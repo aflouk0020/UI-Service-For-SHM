@@ -43,11 +43,7 @@ public class MaintenanceRequestsView {
 
     public MaintenanceRequestsView() {
         initialise();
-        if (isPropertyManager()) {
-            loadRequests();
-        } else {
-            showMessage("Maintenance staff request list endpoint is not yet connected.", false);
-        }
+        loadRequests();
     }
 
     private void initialise() {
@@ -187,17 +183,31 @@ public class MaintenanceRequestsView {
         if (isPropertyManager()) {
             updateStatusButton.setDisable(true);
         } else if (isMaintenanceStaff()) {
-            createButton.setDisable(true);
             assignButton.setDisable(true);
+            createButton.setDisable(true);
+
             statusFilter.setDisable(true);
             priorityFilter.setDisable(true);
-            refreshButton.setDisable(true);
+            refreshButton.setDisable(false);
         }
     }
 
     private void loadRequests() {
         try {
             hideMessage();
+
+            if (isMaintenanceStaff()) {
+                List<MaintenanceRequest> requests = maintenanceApiService.getAssignedRequestsForStaff();
+                requestData.setAll(requests);
+
+                showMessage(
+                        requests.isEmpty()
+                                ? "No assigned maintenance requests found."
+                                : "Assigned maintenance requests loaded successfully.",
+                        false
+                );
+                return;
+            }
 
             String status = statusFilter.getValue();
             String priority = priorityFilter.getValue();
@@ -212,7 +222,12 @@ public class MaintenanceRequestsView {
             List<MaintenanceRequest> requests = maintenanceApiService.getRequests(status, priority);
             requestData.setAll(requests);
 
-            showMessage("Maintenance requests loaded successfully.", false);
+            showMessage(
+                    requests.isEmpty()
+                            ? "No maintenance requests found for the selected filters."
+                            : "Maintenance requests loaded successfully.",
+                    false
+            );
         } catch (RuntimeException ex) {
             requestData.clear();
             showMessage("Failed to load maintenance requests.", true);
@@ -249,23 +264,25 @@ public class MaintenanceRequestsView {
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isPresent() && result.get() == createType) {
             try {
-                Property selectedProperty = propertyComboBox.getValue();
+            	Property selectedProperty = propertyComboBox.getValue();
 
-                if (selectedProperty == null
-                        || descriptionField.getText() == null
-                        || descriptionField.getText().isBlank()
-                        || priorityBox.getValue() == null
-                        || priorityBox.getValue().isBlank()) {
-                    showMessage("Property, description, and priority are required.", true);
-                    return;
-                }
+            	if (selectedProperty == null
+            	        || descriptionField.getText() == null
+            	        || descriptionField.getText().isBlank()
+            	        || priorityBox.getValue() == null
+            	        || priorityBox.getValue().isBlank()) {
+            	    showMessage("Please select a property, enter a description, and choose a priority.", true);
+            	    return;
+            	}
 
-                maintenanceApiService.createRequest(
-                        selectedProperty.getId(),
-                        descriptionField.getText().trim(),
-                        priorityBox.getValue()
-                );
+            	maintenanceApiService.createRequest(
+            	        selectedProperty.getId(),
+            	        descriptionField.getText().trim(),
+            	        priorityBox.getValue()
+            	);
 
+                statusFilter.setValue("");
+                priorityFilter.setValue("");
                 loadRequests();
                 showMessage("Maintenance request created successfully.", false);
             } catch (RuntimeException ex) {
@@ -305,7 +322,23 @@ public class MaintenanceRequestsView {
             return;
         }
 
-        ChoiceDialog<String> dialog = new ChoiceDialog<>("IN_PROGRESS", "OPEN", "IN_PROGRESS", "COMPLETED");
+        String currentStatus = safe(selected.getStatus()).toUpperCase();
+        List<String> allowedNextStatuses;
+
+        switch (currentStatus) {
+            case "OPEN" -> allowedNextStatuses = List.of("IN_PROGRESS");
+            case "IN_PROGRESS" -> allowedNextStatuses = List.of("COMPLETED");
+            case "COMPLETED" -> {
+                showMessage("This maintenance request is already completed.", true);
+                return;
+            }
+            default -> {
+                showMessage("Unsupported current status: " + currentStatus, true);
+                return;
+            }
+        }
+
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(allowedNextStatuses.get(0), allowedNextStatuses);
         dialog.setTitle("Update Status");
         dialog.setHeaderText("Update maintenance status");
         dialog.setContentText("Select new status:");
@@ -317,7 +350,7 @@ public class MaintenanceRequestsView {
                 loadRequests();
                 showMessage("Maintenance status updated successfully.", false);
             } catch (RuntimeException ex) {
-                showMessage("Failed to update maintenance status.", true);
+            	showMessage(ex.getMessage(), true);
             }
         });
     }
