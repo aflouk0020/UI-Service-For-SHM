@@ -23,12 +23,10 @@ import javafx.util.Duration;
 import java.util.List;
 
 import com.sigma.smarthome.ui.model.MaintenanceRequest;
-import com.sigma.smarthome.ui.model.NotificationItem;
 import com.sigma.smarthome.ui.model.Property;
 import com.sigma.smarthome.ui.service.MaintenanceApiService;
 import com.sigma.smarthome.ui.service.NotificationApiService;
 import com.sigma.smarthome.ui.service.PropertyApiService;
-import javafx.scene.Parent;
 
 public class DashboardView {
 
@@ -133,6 +131,32 @@ public class DashboardView {
             ClipboardContent content = new ClipboardContent();
             content.putString(userId);
             Clipboard.getSystemClipboard().setContent(content);
+
+            copyIdButton.setText("Copied");
+            copyIdButton.setStyle(
+                    "-fx-background-color: #dcfce7;" +
+                    "-fx-text-fill: #166534;" +
+                    "-fx-font-size: 11px;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-background-radius: 10;" +
+                    "-fx-padding: 4 10 4 10;"
+            );
+
+            javafx.animation.PauseTransition pause =
+                    new javafx.animation.PauseTransition(Duration.seconds(1.5));
+
+            pause.setOnFinished(event -> {
+                copyIdButton.setText("Copy ID");
+                copyIdButton.setStyle(
+                        "-fx-background-color: #f1f5f9;" +
+                        "-fx-text-fill: #0f172a;" +
+                        "-fx-font-size: 11px;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-padding: 4 10 4 10;"
+                );
+            });
+
+            pause.play();
         });
 
         notificationBellButton.setStyle(
@@ -149,7 +173,7 @@ public class DashboardView {
 
         notificationBellButton.setOnAction(e -> {
             setActiveButton(notificationsButton);
-            contentArea.getChildren().setAll(new NotificationsView().getView());
+            setPageWithAnimation(new NotificationsView().getView());
         });
 
         unreadBadgeLabel.setStyle(
@@ -346,47 +370,47 @@ public class DashboardView {
 
         userManagementButton.setOnAction(e -> {
             setActiveButton(userManagementButton);
-            contentArea.getChildren().setAll(new UserManagementView().getView());
+            setPageWithAnimation(new UserManagementView().getView());
         });
 
         propertyManagementButton.setOnAction(e -> {
             setActiveButton(propertyManagementButton);
-            contentArea.getChildren().setAll(new PropertyView().getView());
+            setPageWithAnimation(new PropertyView().getView());
         });
 
         maintenanceRequestsButton.setOnAction(e -> {
             setActiveButton(maintenanceRequestsButton);
-            contentArea.getChildren().setAll(new MaintenanceRequestsView().getView());
+            setPageWithAnimation(new MaintenanceRequestsView().getView());
         });
 
         systemStatusButton.setOnAction(e -> {
             setActiveButton(systemStatusButton);
-            contentArea.getChildren().setAll(
-                    new SystemStatusView(
-                            () -> {
-                                setActiveButton(notificationsButton);
-                                contentArea.getChildren().setAll(new NotificationsView().getView());
-                            },
-                            () -> {
-                                setActiveButton(reportsButton);
-                                contentArea.getChildren().setAll(new ReportsView().getView());
-                            },
-                            () -> {
-                                setActiveButton(maintenanceRequestsButton);
-                                contentArea.getChildren().setAll(new MaintenanceRequestsView().getView());
-                            }
-                    ).getView()
-            );
+            setPageWithAnimation(
+            	    new SystemStatusView(
+            	        () -> {
+            	            setActiveButton(notificationsButton);
+            	            setPageWithAnimation(new NotificationsView().getView());
+            	        },
+            	        () -> {
+            	            setActiveButton(reportsButton);
+            	            setPageWithAnimation(new ReportsView().getView());
+            	        },
+            	        () -> {
+            	            setActiveButton(maintenanceRequestsButton);
+            	            setPageWithAnimation(new MaintenanceRequestsView().getView());
+            	        }
+            	    ).getView()
+            	);
         });
 
         notificationsButton.setOnAction(e -> {
             setActiveButton(notificationsButton);
-            contentArea.getChildren().setAll(new NotificationsView().getView());
+            setPageWithAnimation(new NotificationsView().getView());
         });
 
         reportsButton.setOnAction(e -> {
             setActiveButton(reportsButton);
-            contentArea.getChildren().setAll(new ReportsView().getView());
+            setPageWithAnimation(new ReportsView().getView());
         });
     }
     
@@ -400,7 +424,7 @@ public class DashboardView {
         toast.setMouseTransparent(false);
         toast.setOnMouseClicked(event -> {
             setActiveButton(notificationsButton);
-            contentArea.getChildren().setAll(new NotificationsView().getView());
+            setPageWithAnimation(new NotificationsView().getView());
 
             toast.playHideAnimation(() -> toastContainer.getChildren().remove(toast));
         });
@@ -558,7 +582,7 @@ public class DashboardView {
             content.getChildren().addAll(pageTitle, pageSubtitle, fallbackCard);
         }
 
-        contentArea.getChildren().setAll(content);
+        setPageWithAnimation(content);
     }
     
     private VBox createDashboardSectionCard(String title, Parent body) {
@@ -624,17 +648,17 @@ public class DashboardView {
 
         openMaintenanceButton.setOnAction(e -> {
             setActiveButton(maintenanceRequestsButton);
-            contentArea.getChildren().setAll(new MaintenanceRequestsView().getView());
+            setPageWithAnimation(new MaintenanceRequestsView().getView());
         });
 
         openNotificationsButton.setOnAction(e -> {
             setActiveButton(notificationsButton);
-            contentArea.getChildren().setAll(new NotificationsView().getView());
+            setPageWithAnimation(new NotificationsView().getView());
         });
 
         openReportsButton.setOnAction(e -> {
             setActiveButton(reportsButton);
-            contentArea.getChildren().setAll(new ReportsView().getView());
+            setPageWithAnimation(new ReportsView().getView());
         });
 
         if (isMaintenanceStaff()) {
@@ -664,6 +688,26 @@ public class DashboardView {
                 "-fx-padding: 10 16 10 16;" +
                 "-fx-cursor: hand;"
         );
+    }
+    
+    private void setPageWithAnimation(Parent newPage) {
+
+        newPage.setOpacity(0);
+        newPage.setTranslateY(20);
+
+        contentArea.getChildren().setAll(newPage);
+
+        javafx.animation.FadeTransition fade =
+                new javafx.animation.FadeTransition(javafx.util.Duration.millis(220), newPage);
+        fade.setFromValue(0);
+        fade.setToValue(1);
+
+        javafx.animation.TranslateTransition slide =
+                new javafx.animation.TranslateTransition(javafx.util.Duration.millis(220), newPage);
+        slide.setFromY(20);
+        slide.setToY(0);
+
+        new javafx.animation.ParallelTransition(fade, slide).play();
     }
     private Parent buildRecentActivityContent(List<NotificationItem> notifications,
             List<MaintenanceRequest> requests) {
@@ -750,22 +794,7 @@ public class DashboardView {
         return card;
     }
 
-    private String getDashboardSubtitle() {
-        if (isPropertyManager()) {
-            return "Welcome. You can manage properties, review maintenance requests, and monitor platform activity.";
-        }
-        if (isMaintenanceStaff()) {
-            return "Welcome. You can view assigned platform information, manage maintenance tasks, and check notifications.";
-        }
-        return "Welcome to the Smart Home Maintenance Platform dashboard.";
-    }
 
-    private String getOverviewBody() {
-        if (isPropertyManager()) {
-            return "Your dashboard is now connected to the main platform workflows. You can manage properties, create and assign maintenance requests, monitor notifications, and review summary reports.";
-        }
-        return "Your dashboard is now connected to assigned workflow tasks. You can view assigned maintenance requests, update request status, review notifications, and access property information.";
-    }
 
     private boolean isPropertyManager() {
         return ROLE_PROPERTY_MANAGER.equalsIgnoreCase(role);
