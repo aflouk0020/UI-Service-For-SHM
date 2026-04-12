@@ -74,6 +74,29 @@ public class MaintenanceApiService {
             throw new MaintenanceApiException("Failed to load maintenance requests.", ex);
         }
     }
+    
+    public List<MaintenanceRequest> getAssignedRequestsForStaff() {
+        try {
+            HttpRequest request = baseRequest(BASE_PATH + "/assigned")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (isSuccess(response.statusCode())) {
+                return objectMapper.readValue(response.body(), new TypeReference<>() {});
+            }
+
+            throw new MaintenanceApiException(
+                    "Failed to load assigned maintenance requests. " + extractErrorMessage(response)
+            );
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new MaintenanceApiException("Failed to load assigned maintenance requests.", ex);
+        } catch (IOException ex) {
+            throw new MaintenanceApiException("Failed to load assigned maintenance requests.", ex);
+        }
+    }
 
     public MaintenanceRequest createRequest(String propertyId, String description, String priority) {
         try {
@@ -119,11 +142,11 @@ public class MaintenanceApiService {
             return "HTTP " + response.statusCode();
         }
     }
-
-    public void assignStaff(String requestId, String assignedStaffId) {
+    
+    public void assignStaff(String requestId, String staffId) {
         try {
             String requestBody = objectMapper.writeValueAsString(
-                    Map.of("assignedStaffId", assignedStaffId)
+                    java.util.Map.of("staffId", staffId)
             );
 
             HttpRequest request = baseRequest(BASE_PATH + "/" + requestId + "/assign")
@@ -137,7 +160,10 @@ public class MaintenanceApiService {
                 return;
             }
 
-            throw new MaintenanceApiException("Failed to assign maintenance staff. HTTP " + response.statusCode() + " - " + response.body());
+            throw new MaintenanceApiException(
+                    "Failed to assign maintenance staff. HTTP " + response.statusCode() + " - " + response.body()
+            );
+
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new MaintenanceApiException("Failed to assign maintenance staff.", ex);
