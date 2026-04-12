@@ -14,7 +14,7 @@ import java.util.List;
 
 public class PropertyApiService {
 
-    private static final String DEFAULT_BASE_URL = "http://localhost:8082";
+	private static final String DEFAULT_BASE_URL = com.sigma.smarthome.ui.util.ApiConfig.API_GATEWAY_BASE_URL;
 
     private final String baseUrl;
     private final HttpClient httpClient;
@@ -32,7 +32,7 @@ public class PropertyApiService {
 
     public List<Property> getProperties() {
         try {
-            HttpRequest request = baseRequest("/properties")
+            HttpRequest request = baseRequest("/api/v1/properties")
                     .GET()
                     .build();
 
@@ -57,7 +57,7 @@ public class PropertyApiService {
                     new CreateOrUpdatePropertyRequest(address, propertyType)
             );
 
-            HttpRequest request = baseRequest("/properties")
+            HttpRequest request = baseRequest("/api/v1/properties")
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
@@ -83,7 +83,7 @@ public class PropertyApiService {
                     new CreateOrUpdatePropertyRequest(address, propertyType)
             );
 
-            HttpRequest request = baseRequest("/properties/" + propertyId)
+            HttpRequest request = baseRequest("/api/v1/properties/" + propertyId)
                     .header("Content-Type", "application/json")
                     .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
@@ -105,7 +105,7 @@ public class PropertyApiService {
 
     public void deleteProperty(String propertyId) {
         try {
-            HttpRequest request = baseRequest("/properties/" + propertyId)
+            HttpRequest request = baseRequest("/api/v1/properties/" + propertyId)
                     .DELETE()
                     .build();
 
