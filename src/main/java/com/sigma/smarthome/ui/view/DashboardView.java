@@ -11,6 +11,10 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import com.sigma.smarthome.ui.view.NotificationsView;
+import com.sigma.smarthome.ui.util.SessionManager;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 
 public class DashboardView {
 
@@ -67,6 +71,29 @@ public class DashboardView {
                 "-fx-font-size: 14px;" +
                 "-fx-text-fill: #334155;"
         );
+        
+        String userId = SessionManager.getUserId();
+
+        Label userIdLabel = new Label(
+                userId.isBlank() ? "User ID unavailable" : "ID: " + shortenUserId(userId)
+        );
+        userIdLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+
+        Button copyIdButton = new Button("Copy ID");
+        copyIdButton.setStyle(
+                "-fx-background-color: #f1f5f9;" +
+                "-fx-text-fill: #0f172a;" +
+                "-fx-font-size: 11px;" +
+                "-fx-background-radius: 10;" +
+                "-fx-padding: 4 10 4 10;"
+        );
+        copyIdButton.setDisable(userId.isBlank());
+
+        copyIdButton.setOnAction(e -> {
+            ClipboardContent content = new ClipboardContent();
+            content.putString(userId);
+            Clipboard.getSystemClipboard().setContent(content);
+        });
 
         Label roleLabel = new Label(formatRole(role));
         roleLabel.setStyle(
@@ -89,7 +116,10 @@ public class DashboardView {
         );
         logoutButton.setOnAction(e -> onLogout.run());
 
-        VBox userTextBox = new VBox(8, emailLabel, roleLabel);
+        HBox idRow = new HBox(8, userIdLabel, copyIdButton);
+        idRow.setAlignment(Pos.CENTER_RIGHT);
+
+        VBox userTextBox = new VBox(6, emailLabel, idRow, roleLabel);
         userTextBox.setAlignment(Pos.CENTER_RIGHT);
 
         HBox rightBox = new HBox(14, userTextBox, logoutButton);
@@ -106,6 +136,13 @@ public class DashboardView {
         );
 
         root.setTop(topBar);
+    }
+    
+    private String shortenUserId(String userId) {
+        if (userId == null || userId.length() < 12) {
+            return userId == null ? "" : userId;
+        }
+        return userId.substring(0, 8) + "..." + userId.substring(userId.length() - 4);
     }
 
     private void configureSidebar() {
@@ -192,10 +229,7 @@ public class DashboardView {
 
         notificationsButton.setOnAction(e -> {
             setActiveButton(notificationsButton);
-            contentArea.getChildren().setAll(new PlaceholderView(
-                    "Notifications",
-                    "Notifications and alerts will appear here."
-            ).getView());
+            contentArea.getChildren().setAll(new NotificationsView().getView());
         });
 
         reportsButton.setOnAction(e -> {
