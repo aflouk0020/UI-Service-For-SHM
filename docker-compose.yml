@@ -1,0 +1,92 @@
+services:
+  discovery-service:
+    image: discovery-service:latest
+    container_name: discovery-service
+    ports:
+      - "8761:8761"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep UP || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  api-gateway:
+    image: api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SERVER_PORT: 8086
+
+  user-service:
+    image: user-service:latest
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SERVER_PORT: 8081
+
+  property-service:
+    image: property-service:latest
+    container_name: property-service
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SERVER_PORT: 8082
+
+  notification-service:
+    image: notification-service:latest
+    container_name: notification-service
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SERVER_PORT: 8084
+
+  maintenance-service:
+    image: maintenance-service:latest
+    container_name: maintenance-service
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      property-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SERVER_PORT: 8083
+      USER_SERVICE_BASE_URL: http://user-service:8081
+      PROPERTY_SERVICE_BASE_URL: http://property-service:8082
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8084
