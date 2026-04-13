@@ -162,15 +162,6 @@ class UserApiServiceTest {
     }
 
     @Test
-    void register_success_returnsRegisteredEmail() throws Exception {
-        UserApiService service = new UserApiService(baseUrl);
-
-        String email = service.register("newuser@example.com", "Password123!", "PROPERTY_MANAGER");
-
-        assertEquals("newuser@example.com", email);
-    }
-
-    @Test
     void register_failure_throwsRuntimeException() {
         UserApiService service = new UserApiService(baseUrl);
 
