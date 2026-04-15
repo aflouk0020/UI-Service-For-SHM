@@ -2,10 +2,12 @@ package com.sigma.smarthome.ui.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sigma.smarthome.ui.model.EdgeHeartbeat;
 import com.sigma.smarthome.ui.model.MaintenanceHistoryItem;
 import com.sigma.smarthome.ui.model.MaintenanceRequest;
 import com.sigma.smarthome.ui.util.ApiConfig;
 import com.sigma.smarthome.ui.util.SessionManager;
+import com.sigma.smarthome.ui.model.EdgeHeartbeat;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,6 +24,10 @@ public class MaintenanceApiService {
     private static final String DEFAULT_BASE_URL = ApiConfig.API_GATEWAY_BASE_URL;
     private static final String BASE_PATH = "/api/v1/maintenance-requests";
 
+    private static final String BASE_URL = "http://localhost:32527"; // your gateway
+
+    private final HttpClient client = HttpClient.newHttpClient();
+    private final ObjectMapper mapper = new ObjectMapper();
     private final String baseUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -34,6 +40,26 @@ public class MaintenanceApiService {
         this.baseUrl = baseUrl;
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
+    }
+    
+    public EdgeHeartbeat getLatestHeartbeat() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(ApiConfig.API_GATEWAY_BASE_URL + "/api/v1/maintenance-requests/edge/heartbeat/latest"))
+                    .GET()
+                    .header("Accept", "application/json")
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                return objectMapper.readValue(response.body(), EdgeHeartbeat.class);
+            }
+
+            throw new RuntimeException("Failed to load edge heartbeat. HTTP " + response.statusCode());
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to load edge heartbeat.", ex);
+        }
     }
 
     public List<MaintenanceRequest> getRequests(String status, String priority) {
