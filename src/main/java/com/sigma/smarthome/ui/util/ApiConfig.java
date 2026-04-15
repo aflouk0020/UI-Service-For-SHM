@@ -3,7 +3,7 @@ package com.sigma.smarthome.ui.util;
 public final class ApiConfig {
 
     public static final String API_GATEWAY_BASE_URL =
-            System.getProperty("api.baseUrl", "http://localhost:8086");
+            System.getProperty("api.baseUrl", "http://localhost:32527");
 
     private ApiConfig() {
     }

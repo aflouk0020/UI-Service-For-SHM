@@ -1,6 +1,8 @@
 package com.sigma.smarthome.ui.view;
 
 import com.sigma.smarthome.ui.model.MaintenanceRequest;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import com.sigma.smarthome.ui.model.NotificationItem;
 import com.sigma.smarthome.ui.model.Property;
 import com.sigma.smarthome.ui.service.MaintenanceApiService;
@@ -18,13 +20,17 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import com.sigma.smarthome.ui.model.EdgeHeartbeat;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
 public class SystemStatusView {
 
+	
     private static final DateTimeFormatter TIME_FORMAT =
             DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss");
 
@@ -49,7 +55,14 @@ public class SystemStatusView {
     private final Runnable onOpenNotifications;
     private final Runnable onOpenReports;
     private final Runnable onOpenMaintenance;
-
+    
+    private final Label edgeDeviceIdValue = new Label("-");
+    private final Label edgePropertyIdValue = new Label("-");
+    private final Label edgeStatusValue = new Label("-");
+    private final Label edgeTemperatureValue = new Label("-");
+    private final Label edgeHumidityValue = new Label("-");
+    private final Label edgeTimestampValue = new Label("-");
+    
     private final Label sectionLabel = new Label("Platform Operations");
     private final Label titleLabel = new Label("System Status");
     private final Label subtitleLabel = new Label(
@@ -99,7 +112,7 @@ public class SystemStatusView {
     private final Label insightValue = new Label("-");
     private final Label pollingValue = new Label("Active");
     private final Label operationalScoreValue = new Label("-");
-
+    private Timeline autoRefreshTimeline;
     private final PropertyApiService propertyApiService = new PropertyApiService();
     private final MaintenanceApiService maintenanceApiService = new MaintenanceApiService();
     private final NotificationApiService notificationApiService = new NotificationApiService();
@@ -125,12 +138,33 @@ public class SystemStatusView {
         configureSummaryCards();
         configureServiceGrid();
         configureBottomSection();
+        configureAutoRefresh();
     }
 
     private void configureRoot() {
         root.setPadding(new Insets(28));
         root.setFillWidth(true);
         root.setStyle("-fx-background-color: transparent;");
+    }
+    
+    private void configureAutoRefresh() {
+        autoRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(5), event -> loadSystemStatus())
+        );
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+    }
+    
+    private String formatHeartbeatTimestamp(String timestamp) {
+        if (timestamp == null || timestamp.isBlank()) {
+            return "-";
+        }
+
+        try {
+            return OffsetDateTime.parse(timestamp).format(TIME_FORMAT);
+        } catch (Exception ex) {
+            return timestamp;
+        }
     }
 
     private void configureHeader() {
@@ -295,14 +329,42 @@ public class SystemStatusView {
     private void configureBottomSection() {
         VBox insightsCard = createInsightsCard();
         VBox actionsCard = createQuickActionsCard();
+        VBox edgeCard = createEdgeDeviceCard();
 
-        HBox bottomRow = new HBox(16, insightsCard, actionsCard);
-        bottomRow.setAlignment(Pos.TOP_LEFT);
+        HBox topBottomRow = new HBox(16, insightsCard, actionsCard);
+        topBottomRow.setAlignment(Pos.TOP_LEFT);
 
         HBox.setHgrow(insightsCard, Priority.ALWAYS);
         HBox.setHgrow(actionsCard, Priority.ALWAYS);
 
-        root.getChildren().add(bottomRow);
+        HBox edgeRow = new HBox(edgeCard);
+        edgeRow.setAlignment(Pos.TOP_LEFT);
+        HBox.setHgrow(edgeCard, Priority.ALWAYS);
+
+        root.getChildren().addAll(topBottomRow, edgeRow);
+    }
+    
+    private VBox createEdgeDeviceCard() {
+        Label edgeTitle = new Label("Edge Device Telemetry");
+        edgeTitle.setStyle(
+                "-fx-font-size: 20px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #0f172a;"
+        );
+
+        VBox panel = new VBox(
+                12,
+                createInsightRow("Device ID", edgeDeviceIdValue),
+                createInsightRow("Property ID", edgePropertyIdValue),
+                createInsightRow("Status", edgeStatusValue),
+                createInsightRow("Temperature", edgeTemperatureValue),
+                createInsightRow("Humidity", edgeHumidityValue),
+                createInsightRow("Last Heartbeat", edgeTimestampValue)
+        );
+        panel.setPadding(new Insets(20));
+        panel.setStyle(CARD_STYLE);
+
+        return new VBox(14, edgeTitle, panel);
     }
 
     private VBox createInsightsCard() {
@@ -475,6 +537,33 @@ public class SystemStatusView {
         activeRoleValue.setText(formatRole(SessionManager.getRole()));
         operationalScoreValue.setText((healthyCount * 100 / totalServiceChecks) + "%");
         lastCheckedLabel.setText("Last checked: " + LocalDateTime.now().format(TIME_FORMAT));
+        
+        try {
+            EdgeHeartbeat heartbeat = maintenanceApiService.getLatestHeartbeat();
+
+            if (heartbeat != null && heartbeat.getDeviceId() != null && !heartbeat.getDeviceId().isBlank()) {
+                edgeDeviceIdValue.setText(heartbeat.getDeviceId());
+                edgePropertyIdValue.setText(safeValue(heartbeat.getPropertyId(), "-"));
+                edgeStatusValue.setText(safeValue(heartbeat.getStatus(), "-"));
+                edgeTemperatureValue.setText(String.format("%.2f °C", heartbeat.getTemperature()));
+                edgeHumidityValue.setText(String.format("%.2f %%", heartbeat.getHumidity()));
+                edgeTimestampValue.setText(formatHeartbeatTimestamp(heartbeat.getTimestamp()));
+            } else {
+                edgeDeviceIdValue.setText("No heartbeat yet");
+                edgePropertyIdValue.setText("-");
+                edgeStatusValue.setText("-");
+                edgeTemperatureValue.setText("-");
+                edgeHumidityValue.setText("-");
+                edgeTimestampValue.setText("-");
+            }
+        } catch (RuntimeException ex) {
+            edgeDeviceIdValue.setText("Unavailable");
+            edgePropertyIdValue.setText("-");
+            edgeStatusValue.setText("Unavailable");
+            edgeTemperatureValue.setText("-");
+            edgeHumidityValue.setText("-");
+            edgeTimestampValue.setText("Unable to load edge heartbeat");
+        }
 
         if (healthyCount == totalServiceChecks) {
             platformHealthBadge.setText("Platform Healthy");

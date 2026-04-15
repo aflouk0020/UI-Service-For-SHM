@@ -29,7 +29,7 @@ public class UserManagementView {
     private static final DateTimeFormatter DISPLAY_TIME =
             DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
 
-    private final VBox root = new VBox(20);
+    private final VBox root = new VBox(22);
 
     private final Label titleLabel = new Label("User Management");
     private final Label subtitleLabel = new Label("Create and manage platform user accounts for operational workflows.");
@@ -74,13 +74,13 @@ public class UserManagementView {
 
     private void configureHeader() {
         titleLabel.setStyle(
-                "-fx-font-size: 30px;" +
+                "-fx-font-size: 32px;" +
                 "-fx-font-weight: bold;" +
                 "-fx-text-fill: #0f172a;"
         );
 
         subtitleLabel.setStyle(
-                "-fx-font-size: 14px;" +
+                "-fx-font-size: 15px;" +
                 "-fx-text-fill: #64748b;"
         );
 
@@ -96,8 +96,11 @@ public class UserManagementView {
                 "-fx-font-size: 13px;" +
                 "-fx-text-fill: #92400e;" +
                 "-fx-background-color: #fef3c7;" +
-                "-fx-background-radius: 12;" +
-                "-fx-padding: 10 14 10 14;"
+                "-fx-background-radius: 14;" +
+                "-fx-padding: 12 16 12 16;" +
+                "-fx-border-color: #fde68a;" +
+                "-fx-border-radius: 14;" +
+                "-fx-border-width: 1;"
         );
 
         root.getChildren().addAll(titleLabel, subtitleLabel, messageLabel, helperLabel);
@@ -125,21 +128,22 @@ public class UserManagementView {
 
         valueLabel.setWrapText(true);
         valueLabel.setStyle(
-                "-fx-font-size: 22px;" +
+                "-fx-font-size: 24px;" +
                 "-fx-font-weight: bold;" +
                 "-fx-text-fill: #0f172a;"
         );
 
-        VBox card = new VBox(8, titleCard, valueLabel);
-        card.setPadding(new Insets(18));
+        VBox card = new VBox(10, titleCard, valueLabel);
+        card.setPadding(new Insets(20));
         card.setPrefWidth(220);
-        card.setMinHeight(110);
+        card.setMinHeight(118);
         card.setStyle(
-                "-fx-background-color: white;" +
-                "-fx-background-radius: 18;" +
-                "-fx-border-color: #e2e8f0;" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;"
+                "-fx-background-color: linear-gradient(to bottom right, #ffffff, #f8fbff);" +
+                "-fx-background-radius: 20;" +
+                "-fx-border-color: #dbeafe;" +
+                "-fx-border-radius: 20;" +
+                "-fx-border-width: 1;" +
+                "-fx-effect: dropshadow(gaussian, rgba(37,99,235,0.08), 18, 0.12, 0, 6);"
         );
 
         HBox.setHgrow(card, Priority.ALWAYS);
@@ -149,13 +153,19 @@ public class UserManagementView {
     private void configureForm() {
         emailField.setPromptText("Enter user email");
         emailField.setPrefWidth(320);
+        emailField.setPrefHeight(42);
+        emailField.setStyle(commonFieldStyle());
 
         passwordField.setPromptText("Enter temporary password");
         passwordField.setPrefWidth(320);
+        passwordField.setPrefHeight(42);
+        passwordField.setStyle(commonFieldStyle());
 
         roleBox.getItems().addAll("PROPERTY_MANAGER", "MAINTENANCE_STAFF");
         roleBox.setPromptText("Select role");
         roleBox.setPrefWidth(320);
+        roleBox.setPrefHeight(42);
+        roleBox.setStyle(commonFieldStyle());
 
         stylePrimaryButton(createUserButton);
         styleSecondaryButton(clearButton);
@@ -180,13 +190,14 @@ public class UserManagementView {
         actionRow.setAlignment(Pos.CENTER_LEFT);
 
         VBox formCard = new VBox(18, formGrid, actionRow);
-        formCard.setPadding(new Insets(20));
+        formCard.setPadding(new Insets(22));
         formCard.setStyle(
-                "-fx-background-color: white;" +
-                "-fx-background-radius: 18;" +
+                "-fx-background-color: rgba(255,255,255,0.98);" +
+                "-fx-background-radius: 20;" +
                 "-fx-border-color: #e2e8f0;" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;"
+                "-fx-border-radius: 20;" +
+                "-fx-border-width: 1;" +
+                "-fx-effect: dropshadow(gaussian, rgba(15,23,42,0.06), 18, 0.12, 0, 6);"
         );
 
         root.getChildren().add(formCard);
@@ -213,15 +224,22 @@ public class UserManagementView {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.setPrefHeight(430);
         table.setPlaceholder(new Label("No users created from this UI session yet."));
+        table.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-control-inner-background: white;" +
+                "-fx-table-cell-border-color: #eef2f7;" +
+                "-fx-padding: 0;"
+        );
 
         VBox tableCard = new VBox(table);
         tableCard.setPadding(new Insets(18));
         tableCard.setStyle(
-                "-fx-background-color: white;" +
-                "-fx-background-radius: 18;" +
+                "-fx-background-color: rgba(255,255,255,0.98);" +
+                "-fx-background-radius: 20;" +
                 "-fx-border-color: #e2e8f0;" +
-                "-fx-border-radius: 18;" +
-                "-fx-border-width: 1;"
+                "-fx-border-radius: 20;" +
+                "-fx-border-width: 1;" +
+                "-fx-effect: dropshadow(gaussian, rgba(15,23,42,0.06), 18, 0.12, 0, 6);"
         );
 
         root.getChildren().add(tableCard);
@@ -236,6 +254,11 @@ public class UserManagementView {
         TableColumn<UserRow, String> column = new TableColumn<>(title);
         column.setCellValueFactory(data -> new ReadOnlyStringWrapper(safe(mapper.apply(data.getValue()))));
         column.setPrefWidth(width);
+        column.setStyle(
+                "-fx-alignment: CENTER_LEFT;" +
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: bold;"
+        );
         return column;
     }
 
@@ -307,25 +330,40 @@ public class UserManagementView {
         }
     }
 
+    private String commonFieldStyle() {
+        return "-fx-background-color: #f8fafc;" +
+               "-fx-text-fill: #0f172a;" +
+               "-fx-font-size: 13px;" +
+               "-fx-background-radius: 12;" +
+               "-fx-border-color: #d1d5db;" +
+               "-fx-border-radius: 12;" +
+               "-fx-border-width: 1;" +
+               "-fx-prompt-text-fill: #9ca3af;";
+    }
+
     private void stylePrimaryButton(Button button) {
         button.setStyle(
-                "-fx-background-color: #2563eb;" +
+                "-fx-background-color: linear-gradient(to bottom right, #2563eb, #1d4ed8);" +
                 "-fx-text-fill: white;" +
+                "-fx-font-size: 13px;" +
                 "-fx-font-weight: bold;" +
-                "-fx-background-radius: 12;" +
+                "-fx-background-radius: 14;" +
                 "-fx-padding: 10 18 10 18;" +
-                "-fx-cursor: hand;"
+                "-fx-cursor: hand;" +
+                "-fx-effect: dropshadow(gaussian, rgba(37,99,235,0.20), 14, 0.15, 0, 4);"
         );
     }
 
     private void styleSecondaryButton(Button button) {
         button.setStyle(
-                "-fx-background-color: #f8fafc;" +
+                "-fx-background-color: linear-gradient(to bottom right, #ffffff, #f8fafc);" +
                 "-fx-text-fill: #0f172a;" +
+                "-fx-font-size: 13px;" +
                 "-fx-font-weight: bold;" +
-                "-fx-background-radius: 12;" +
+                "-fx-background-radius: 14;" +
                 "-fx-border-color: #cbd5e1;" +
-                "-fx-border-radius: 12;" +
+                "-fx-border-radius: 14;" +
+                "-fx-border-width: 1;" +
                 "-fx-padding: 10 18 10 18;" +
                 "-fx-cursor: hand;"
         );
